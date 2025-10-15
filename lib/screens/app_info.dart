@@ -8,8 +8,6 @@ class AppInfoScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final primary = theme.colorScheme.primary;
-    final surface = theme.colorScheme.surface;
-    final surfaceHigh = theme.colorScheme.surfaceVariant;
     final textSecondary = isDark ? Colors.grey[300] : Colors.grey[700];
 
     return Scaffold(

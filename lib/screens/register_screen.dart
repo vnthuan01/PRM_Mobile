@@ -18,7 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
@@ -33,14 +33,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _showSuccessDialog() {
+  void _showSuccessDialog(AuthProvider authProvider) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Column(
           children: [
             Container(
@@ -58,10 +56,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 16),
             const Text(
               'Đăng ký thành công!',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
             ),
           ],
         ),
@@ -77,7 +72,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Navigator.pop(context);
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        HomeScreen(userData: authProvider.auth!.data.user),
+                  ),
                   (_) => false,
                 );
               },
@@ -122,7 +120,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -132,21 +132,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 Text(
                   'Tạo tài khoản mới',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Điền thông tin để bắt đầu',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 32),
 
@@ -164,7 +164,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     filled: true,
                     fillColor: Theme.of(context).scaffoldBackgroundColor,
                     focusColor: Theme.of(context).colorScheme.primary,
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2), borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -192,13 +198,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     filled: true,
                     fillColor: Theme.of(context).scaffoldBackgroundColor,
                     focusColor: Theme.of(context).colorScheme.primary,
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2), borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Vui lòng nhập email';
                     }
-                    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                    final emailRegex = RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    );
                     if (!emailRegex.hasMatch(value.trim())) {
                       return 'Email không hợp lệ';
                     }
@@ -207,34 +221,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Phone Field
-                TextFormField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    labelText: 'Số điện thoại',
-                    hintText: '0123456789',
-                    prefixIcon: const Icon(Icons.phone_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: Theme.of(context).scaffoldBackgroundColor,
-                    focusColor: Theme.of(context).colorScheme.primary,
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2), borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Vui lòng nhập số điện thoại';
-                    }
-                    final phoneRegex = RegExp(r'^[0-9]{10,11}$');
-                    if (!phoneRegex.hasMatch(value.trim())) {
-                      return 'Số điện thoại phải có 10-11 chữ số';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
+                // // Phone Field
+                // TextFormField(
+                //   controller: _phoneController,
+                //   keyboardType: TextInputType.phone,
+                //   decoration: InputDecoration(
+                //     labelText: 'Số điện thoại',
+                //     hintText: '0123456789',
+                //     prefixIcon: const Icon(Icons.phone_outlined),
+                //     border: OutlineInputBorder(
+                //       borderRadius: BorderRadius.circular(12),
+                //     ),
+                //     filled: true,
+                //     fillColor: Theme.of(context).scaffoldBackgroundColor,
+                //     focusColor: Theme.of(context).colorScheme.primary,
+                //     focusedBorder: OutlineInputBorder(
+                //       borderSide: BorderSide(
+                //         color: Theme.of(context).colorScheme.primary,
+                //         width: 2,
+                //       ),
+                //       borderRadius: BorderRadius.circular(12),
+                //     ),
+                //   ),
+                //   validator: (value) {
+                //     if (value == null || value.trim().isEmpty) {
+                //       return 'Vui lòng nhập số điện thoại';
+                //     }
+                //     final phoneRegex = RegExp(r'^[0-9]{10,11}$');
+                //     if (!phoneRegex.hasMatch(value.trim())) {
+                //       return 'Số điện thoại phải có 10-11 chữ số';
+                //     }
+                //     return null;
+                //   },
+                // ),
+                // const SizedBox(height: 16),
 
                 // Password Field
                 TextFormField(
@@ -262,7 +282,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     filled: true,
                     fillColor: Theme.of(context).scaffoldBackgroundColor,
                     focusColor: Theme.of(context).colorScheme.primary,
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2), borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -302,7 +328,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     filled: true,
                     fillColor: Theme.of(context).scaffoldBackgroundColor,
                     focusColor: Theme.of(context).colorScheme.primary,
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2), borderRadius: BorderRadius.circular(12)),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -382,23 +414,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       RegisterRequest(
                                         email: _emailController.text.trim(),
                                         fullName: _nameController.text.trim(),
-                                        phoneNumber: _phoneController.text.trim(),
                                         password: _passwordController.text,
-                                        confirmPassword: _confirmPasswordController.text,
+                                        confirmPassword:
+                                            _confirmPasswordController.text,
                                       ),
                                     );
 
                                     if (authProvider.auth != null &&
+                                        authProvider
+                                            .auth!
+                                            .data
+                                            .token
+                                            .isNotEmpty &&
                                         authProvider.error == null) {
                                       if (mounted) {
-                                        _showSuccessDialog();
+                                        _showSuccessDialog(authProvider);
                                       }
                                     }
                                   }
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -455,10 +494,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     Text(
                       'Đã có tài khoản? ',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
                     ),
                     TextButton(
                       onPressed: () {

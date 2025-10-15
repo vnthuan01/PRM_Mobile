@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:prm_project/model/auth_response.dart';
 import '../widgets/custom_button.dart';
 import 'setting_screen.dart';
+import '../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final User userData;
+
+  const ProfileScreen({super.key, required this.userData});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -11,12 +15,27 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController(text: "Nguyễn Văn A");
-  final _phoneController = TextEditingController(text: "0987654321");
+  late TextEditingController _nameController;
+  late TextEditingController _phoneController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.userData.fullName);
+    _phoneController = TextEditingController(text: widget.userData.phoneNumber);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final authService = AuthService();
 
     return Scaffold(
       appBar: AppBar(
@@ -25,98 +44,155 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         foregroundColor: primaryColor,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: primaryColor.withOpacity(0.15),
-                child: Icon(Icons.person, size: 44, color: primaryColor),
-              ),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Họ và tên',
-                  border: OutlineInputBorder(),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                // Avatar + name
+                CircleAvatar(
+                  radius: 45,
+                  backgroundColor: primaryColor.withValues(alpha: 0.15),
+                  child: Icon(Icons.person, size: 50, color: primaryColor),
                 ),
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Không được để trống'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Số điện thoại',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.phone,
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Không được để trống'
-                    : null,
-              ),
-              const SizedBox(height: 24),
-              CustomButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Đã lưu thông tin cá nhân")),
-                    );
-                  }
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.save, size: 20),
-                    SizedBox(width: 8),
-                    Text("Lưu thay đổi"),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              Divider(height: 1, color: Colors.grey[300]),
-              const SizedBox(height: 32),
-              CustomButton(
-                onPressed: _showChangePasswordModal,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.lock, size: 20),
-                    SizedBox(width: 8),
-                    Text("Thay đổi mật khẩu"),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 44),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.settings, size: 26),
-                label: const Text("Cài đặt ứng dụng"),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.push(
+                const SizedBox(height: 16),
+                Text(
+                  widget.userData.fullName,
+                  style: Theme.of(
                     context,
-                    MaterialPageRoute(builder: (_) => const SettingScreen()),
-                  );
-                },
-              ),
-            ],
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
+
+                // --- Thông tin form ---
+                _buildTextField(_nameController, 'Họ và tên'),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  _phoneController,
+                  'Số điện thoại',
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  initialValue: widget.userData.email,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
+                  readOnly: true,
+                ),
+                const SizedBox(height: 28),
+
+                // --- Lưu thay đổi ---
+                CustomButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Đã lưu thông tin cá nhân"),
+                        ),
+                      );
+                    }
+                  },
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.save, size: 20),
+                      SizedBox(width: 8),
+                      Text("Lưu thay đổi"),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 36),
+                Divider(thickness: 1, color: Colors.grey[300]),
+                const SizedBox(height: 36),
+
+                // --- Nhóm nút quản lý tài khoản ---
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    CustomButton(
+                      onPressed: _showChangePasswordModal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.lock, size: 20, color: Colors.white),
+                          SizedBox(width: 8),
+                          Text("Thay đổi mật khẩu"),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.settings, size: 22),
+                      label: const Text("Cài đặt ứng dụng"),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SettingScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    OutlinedButton.icon(
+                      icon: const Icon(
+                        Icons.logout,
+                        size: 22,
+                        color: Colors.red,
+                      ),
+                      label: const Text(
+                        "Đăng xuất",
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: Colors.red),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () async {
+                        await authService.logout();
+                        if (context.mounted) {
+                          Navigator.of(context).pushReplacementNamed('/login');
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label, {
+    TextInputType? keyboardType,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      validator: (value) =>
+          value == null || value.isEmpty ? 'Không được để trống' : null,
     );
   }
 
@@ -134,6 +210,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 // ==================== Change Password Modal ====================
+
 class _ChangePasswordSheet extends StatefulWidget {
   const _ChangePasswordSheet();
 
@@ -152,7 +229,6 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
   Color _passwordColor = Colors.red;
 
   void _checkPasswordStrength(String value) {
-    final theme = Theme.of(context);
     double strength = 0;
 
     if (value.isEmpty) {
@@ -173,7 +249,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
       _passwordStrength = strength;
       if (strength <= 0.25) {
         _passwordLabel = "Weak";
-        _passwordColor = theme.colorScheme.error;
+        _passwordColor = Colors.red;
       } else if (strength <= 0.5) {
         _passwordLabel = "Medium";
         _passwordColor = Colors.orangeAccent;
@@ -221,10 +297,9 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                   TextFormField(
                     controller: _currentPassController,
                     obscureText: true,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'Mật khẩu hiện tại',
-                      border: const OutlineInputBorder(),
-                      labelStyle: theme.textTheme.bodyMedium,
+                      border: OutlineInputBorder(),
                     ),
                     validator: (value) => value == null || value.isEmpty
                         ? 'Vui lòng nhập mật khẩu hiện tại'
@@ -235,16 +310,17 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                     controller: _newPassController,
                     obscureText: true,
                     onChanged: _checkPasswordStrength,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'Mật khẩu mới',
-                      border: const OutlineInputBorder(),
-                      labelStyle: theme.textTheme.bodyMedium,
+                      border: OutlineInputBorder(),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty)
+                      if (value == null || value.isEmpty) {
                         return 'Vui lòng nhập mật khẩu mới';
-                      if (value.length < 6)
+                      }
+                      if (value.length < 6) {
                         return 'Mật khẩu phải có ít nhất 6 ký tự';
+                      }
                       return null;
                     },
                   ),
@@ -252,35 +328,20 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                   TextFormField(
                     controller: _confirmPassController,
                     obscureText: true,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'Xác nhận mật khẩu mới',
-                      border: const OutlineInputBorder(),
-                      labelStyle: theme.textTheme.bodyMedium,
+                      border: OutlineInputBorder(),
                     ),
                     validator: (value) {
-                      if (value != _newPassController.text)
+                      if (value != _newPassController.text) {
                         return 'Mật khẩu xác nhận không khớp';
+                      }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    "Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ cái, số và ký tự đặc biệt",
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.hintColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // --- Strength Bar ---
                   Row(
                     children: [
-                      Text(
-                        "Độ mạnh mật khẩu",
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.hintColor,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
                       Expanded(
                         child: LinearProgressIndicator(
                           value: _passwordStrength,

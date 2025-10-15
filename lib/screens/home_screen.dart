@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import 'list_screen.dart'; // Đảm bảo bạn đã import các màn hình
+import 'list_screen.dart'; // các màn hình khác
 import 'profile_screen.dart';
+import '../model/auth_response.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final User userData;
+
+  const HomeScreen({super.key, required this.userData});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -11,9 +14,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  late final List<Widget> _pages;
 
-  // Danh sách các trang không thay đổi
-  final List<Widget> _pages = const [_HomeTab(), ListScreen(), ProfileScreen()];
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const _HomeTab(),
+      const ListScreen(),
+      ProfileScreen(userData: widget.userData), //Truyền runtime data
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -27,19 +38,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: IndexedStack(index: _currentIndex, children: _pages),
-      ),
-      // 1. Đơn giản hóa cấu trúc BottomNavigationBar
-      // Sử dụng Stack để cho phép item active "tràn" ra ngoài
+      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: Container(
-        height: 88, // Tăng chiều cao để có không gian cho item nổi lên
-        color: Colors.transparent, // Nền của SizedBox là trong suốt
+        height: 88,
+        color: Colors.transparent,
         child: Stack(
           clipBehavior: Clip.none,
           alignment: Alignment.bottomCenter,
           children: [
-            // Nền trắng bo góc của thanh bar
             Container(
               height: 64,
               margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -48,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -57,7 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  // 2. Sử dụng widget _BottomNavItem mới cho tất cả các item
                   _BottomNavItem(
                     icon: Icons.list_alt,
                     label: 'Danh sách',
@@ -92,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// 3. Widget hợp nhất cho tất cả các item trong thanh điều hướng
+// Widget Bottom Navigation Item
 class _BottomNavItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -121,13 +126,12 @@ class _BottomNavItem extends StatelessWidget {
         child: SizedBox(
           height: double.infinity,
           child: Stack(
-            clipBehavior: Clip.none, // cho phép icon nổi ra ngoài
+            clipBehavior: Clip.none,
             alignment: Alignment.center,
             children: [
-              // Icon active
               if (isActive)
                 Positioned(
-                  top: -20, // nổi lên 20px trên container
+                  top: -20,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -171,109 +175,130 @@ class _BottomNavItem extends StatelessWidget {
   }
 }
 
-// Màn hình Home Tab không thay đổi
+// Home Tab
 class _HomeTab extends StatelessWidget {
   const _HomeTab();
+
+  static final List<_Feature> features = [
+    _Feature(Icons.directions_car, "Theo dõi xe", "Nhắc nhở bảo dưỡng định kỳ"),
+    _Feature(
+      Icons.schedule,
+      "Đặt lịch dịch vụ",
+      "Bảo dưỡng hoặc sửa chữa trực tuyến",
+    ),
+    _Feature(
+      Icons.receipt_long,
+      "Quản lý hồ sơ",
+      "Lưu lịch sử bảo dưỡng và chi phí",
+    ),
+    _Feature(
+      Icons.notifications,
+      "Thông báo",
+      "Trạng thái: chờ – đang làm – hoàn tất",
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'EV Service Center Maintenance! \nWelcome to EV Service Center',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: primaryColor,
-                  fontWeight: FontWeight.bold,
-                ),
+      child: CustomScrollView(
+        slivers: [
+          // Header + search
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'EV Service Center Maintenance!\nWelcome to EV Service Center',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Tìm xe của bạn...',
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: Theme.of(context).scaffoldBackgroundColor,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 0,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
+          ),
 
-            // Search bar
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'Tìm xe của bạn...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Theme.of(context).scaffoldBackgroundColor,
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 0,
-                  horizontal: 16,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Category / Feature Grid
-            GridView(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          // Grid 2 cột, card tự giãn chiều cao
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
-                childAspectRatio: 1.2,
+                childAspectRatio: 0.8, // card cao hơn
               ),
-              children: const [
-                _FeatureCard(
-                  icon: Icons.directions_car,
-                  title: "Theo dõi xe",
-                  subtitle: "Nhắc nhở bảo dưỡng định kỳ",
-                ),
-                _FeatureCard(
-                  icon: Icons.schedule,
-                  title: "Đặt lịch dịch vụ",
-                  subtitle: "Bảo dưỡng hoặc sửa chữa trực tuyến",
-                ),
-                _FeatureCard(
-                  icon: Icons.receipt_long,
-                  title: "Quản lý hồ sơ",
-                  subtitle: "Lưu lịch sử bảo dưỡng và chi phí",
-                ),
-                _FeatureCard(
-                  icon: Icons.notifications,
-                  title: "Thông báo",
-                  subtitle: "Trạng thái: chờ – đang làm – hoàn tất",
-                ),
-              ],
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final f = features[index];
+                return _FeatureCard(
+                  icon: f.icon,
+                  title: f.title,
+                  subtitle: f.subtitle,
+                );
+              }, childCount: features.length),
             ),
+          ),
 
-            const SizedBox(height: 24),
-            // Optional: nút "Xem tất cả" hoặc thêm section
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          // Nút xem tất cả
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+            sliver: SliverToBoxAdapter(
+              child: ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  minimumSize: const Size.fromHeight(50),
                 ),
-                minimumSize: const Size.fromHeight(50),
-              ),
-              child: const Text(
-                'Xem tất cả',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                child: const Text(
+                  'Xem tất cả',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+        ],
       ),
     );
   }
 }
 
+// Feature data model
+class _Feature {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  _Feature(this.icon, this.title, this.subtitle);
+}
+
+// Feature Card
 class _FeatureCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -294,18 +319,17 @@ class _FeatureCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 2,
       child: InkWell(
-        onTap: () {
-          // TODO: navigate đến màn hình chức năng tương ứng
-        },
         borderRadius: BorderRadius.circular(12),
+        onTap: () {},
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
+            mainAxisSize: MainAxisSize.min, // co vừa nội dung
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: primaryColor.withValues(alpha: 0.1),
+                backgroundColor: primaryColor.withOpacity(0.1),
                 child: Icon(icon, color: primaryColor, size: 28),
               ),
               const SizedBox(height: 16),
@@ -317,11 +341,15 @@ class _FeatureCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
+              // subtitle auto wrap, không tràn
               Text(
                 subtitle,
                 style: Theme.of(
                   context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w100),
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w400),
+                softWrap: true,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

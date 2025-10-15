@@ -25,7 +25,7 @@ class CustomButton extends StatelessWidget {
       height: 48,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: enabled ? color : color.withOpacity(0.5),
+          backgroundColor: enabled ? color : color.withValues(alpha: 0.5),
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -34,12 +34,19 @@ class CustomButton extends StatelessWidget {
             ? const SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               )
-            : child ?? Text(
-                text!,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+            : child ??
+                  Text(
+                    text!,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
       ),
     );
   }
