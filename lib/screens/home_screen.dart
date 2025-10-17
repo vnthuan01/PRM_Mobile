@@ -1,5 +1,7 @@
+// HomeScreen.dart
 import 'package:flutter/material.dart';
-import 'list_screen.dart'; // các màn hình khác
+import 'package:prm_project/screens/appointment/appointment_list_screen.dart';
+import 'appointment/appointment_create_screen.dart';
 import 'profile_screen.dart';
 import '../model/auth_response.dart';
 
@@ -20,9 +22,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _pages = [
-      const _HomeTab(),
-      const ListScreen(),
-      ProfileScreen(userData: widget.userData), //Truyền runtime data
+      _HomeTab(userData: widget.userData), // truyền userData vào HomeTab
+      const AppointmentListScreen(),
+      ProfileScreen(userData: widget.userData),
     ];
   }
 
@@ -54,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: Colors.black.withOpacity(0.08),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -97,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// Widget Bottom Navigation Item
+// Bottom nav item
 class _BottomNavItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -145,7 +147,7 @@ class _BottomNavItem extends StatelessWidget {
                           color: activeColor,
                           boxShadow: [
                             BoxShadow(
-                              color: activeColor.withValues(alpha: 0.4),
+                              color: activeColor.withOpacity(0.4),
                               blurRadius: 12,
                               spreadRadius: 2,
                             ),
@@ -175,9 +177,10 @@ class _BottomNavItem extends StatelessWidget {
   }
 }
 
-// Home Tab
+// HomeTab
 class _HomeTab extends StatelessWidget {
-  const _HomeTab();
+  final User userData;
+  const _HomeTab({required this.userData});
 
   static final List<_Feature> features = [
     _Feature(Icons.directions_car, "Theo dõi xe", "Nhắc nhở bảo dưỡng định kỳ"),
@@ -205,7 +208,6 @@ class _HomeTab extends StatelessWidget {
     return SafeArea(
       child: CustomScrollView(
         slivers: [
-          // Header + search
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             sliver: SliverToBoxAdapter(
@@ -242,15 +244,14 @@ class _HomeTab extends StatelessWidget {
             ),
           ),
 
-          // Grid 2 cột, card tự giãn chiều cao
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
-                childAspectRatio: 0.8, // card cao hơn
+                childAspectRatio: 0.8,
               ),
               delegate: SliverChildBuilderDelegate((context, index) {
                 final f = features[index];
@@ -258,39 +259,44 @@ class _HomeTab extends StatelessWidget {
                   icon: f.icon,
                   title: f.title,
                   subtitle: f.subtitle,
+                  onTap: () async {
+                    switch (f.title) {
+                      case "Đặt lịch dịch vụ":
+                        final result = await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => AppointmentCreateScreen(
+                              customerId: userData.id,
+                            ),
+                          ),
+                        );
+                        if (result == true) {
+                          final homeState = context
+                              .findAncestorStateOfType<_HomeScreenState>();
+                          homeState?._onItemTapped(1);
+                        }
+                        break;
+                      case "Theo dõi xe":
+                        break;
+                      case "Quản lý hồ sơ":
+                        final homeState = context
+                            .findAncestorStateOfType<_HomeScreenState>();
+                        homeState?._onItemTapped(2);
+                        break;
+                      case "Thông báo":
+                        break;
+                    }
+                  },
                 );
               }, childCount: features.length),
             ),
           ),
-
-          // Nút xem tất cả
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-            sliver: SliverToBoxAdapter(
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  minimumSize: const Size.fromHeight(50),
-                ),
-                child: const Text(
-                  'Xem tất cả',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
         ],
       ),
     );
   }
 }
 
-// Feature data model
+// Feature
 class _Feature {
   final IconData icon;
   final String title;
@@ -298,17 +304,19 @@ class _Feature {
   _Feature(this.icon, this.title, this.subtitle);
 }
 
-// Feature Card
+// FeatureCard
 class _FeatureCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
 
   const _FeatureCard({
     super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.onTap,
   });
 
   @override
@@ -320,16 +328,16 @@ class _FeatureCard extends StatelessWidget {
       elevation: 2,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {},
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
-            mainAxisSize: MainAxisSize.min, // co vừa nội dung
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: primaryColor.withOpacity(0.1),
+                backgroundColor: primaryColor.withValues(alpha: 0.1),
                 child: Icon(icon, color: primaryColor, size: 28),
               ),
               const SizedBox(height: 16),
@@ -341,7 +349,6 @@ class _FeatureCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              // subtitle auto wrap, không tràn
               Text(
                 subtitle,
                 style: Theme.of(

@@ -80,6 +80,10 @@ class ApiService {
   Future<Response> put(String path, dynamic data, {Options? options}) =>
       _dio.put(path, data: data, options: options);
 
+  Future<Response> patch(String path, [dynamic data]) async {
+    return _dio.patch(path, data: data);
+  }
+
   Future<Response> delete(String path, {dynamic data, Options? options}) =>
       _dio.delete(path, data: data, options: options);
 }

@@ -4,6 +4,7 @@ import '../model/login_request.dart';
 import '../providers/auth_provider.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
+import 'technician_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -196,16 +197,31 @@ class _LoginScreenState extends State<LoginScreen> {
                                             .isNotEmpty &&
                                         authProvider.error == null) {
                                       if (mounted) {
-                                        Navigator.pushAndRemoveUntil(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => HomeScreen(
-                                              userData:
-                                                  authProvider.auth!.data.user,
+                                        final user =
+                                            authProvider.auth!.data.user;
+
+                                        if (user.role == 2 ||
+                                            user.role.toString() == '2') {
+                                          Navigator.pushAndRemoveUntil(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  TechnicianHomeScreen(
+                                                    userData: user,
+                                                  ),
                                             ),
-                                          ),
-                                          (_) => false,
-                                        );
+                                            (_) => false,
+                                          );
+                                        } else {
+                                          Navigator.pushAndRemoveUntil(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  HomeScreen(userData: user),
+                                            ),
+                                            (_) => false,
+                                          );
+                                        }
                                       }
                                     }
                                   }

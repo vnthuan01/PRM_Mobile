@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:prm_project/providers/booking_provider.dart';
+import 'package:prm_project/services/booking_service.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/auth_service.dart';
@@ -7,6 +9,7 @@ import 'theme_notifier.dart';
 import 'app_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/technician_home_screen.dart';
 
 // ------------------- MAIN -------------------
 void main() async {
@@ -14,13 +17,15 @@ void main() async {
   await dotenv.load();
 
   final repo = AuthService();
+  final booking = BookingService();
   final authProvider = AuthProvider(repo);
-
+  final bookingProvider = BookingProvider(booking);
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeNotifier()),
         ChangeNotifierProvider(create: (_) => authProvider),
+        ChangeNotifierProvider(create: (_) => bookingProvider),
       ],
       child: const MyApp(),
     ),
@@ -56,7 +61,9 @@ class MyApp extends StatelessWidget {
       ),
       themeMode: themeNotifier.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       debugShowCheckedModeBanner: false,
-      home: const SplashScreen(), // 👈 Thêm SplashScreen làm màn đầu
+      initialRoute: '/',
+      routes: {'/login': (context) => LoginScreen()},
+      home: const SplashScreen(), //Thêm SplashScreen làm màn đầu
     );
   }
 }
@@ -111,16 +118,23 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _navigateNext() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.restoreSession();
+    final user = authProvider.currentUser;
 
     if (!mounted) return;
-
-    if (authProvider.isLoggedIn && authProvider.currentUser != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => HomeScreen(userData: authProvider.currentUser!),
-        ),
-      );
+    if (authProvider.isLoggedIn && user != null) {
+      if (user.role == 2) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TechnicianHomeScreen(userData: user),
+          ),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => HomeScreen(userData: user)),
+        );
+      }
     } else {
       Navigator.pushReplacement(
         context,
