@@ -1,11 +1,13 @@
+// technician_home_screen.dart
 import 'package:flutter/material.dart';
-import '../model/auth_response.dart';
-import 'profile_screen.dart';
+import '../../model/auth_response.dart';
+import '../screens/profile_screen.dart';
 import '../screens/technician/dashboard.dart';
 import '../screens/technician/appointment_tab.dart';
 
 class TechnicianHomeScreen extends StatefulWidget {
   final User userData;
+
   const TechnicianHomeScreen({super.key, required this.userData});
 
   @override
@@ -14,21 +16,30 @@ class TechnicianHomeScreen extends StatefulWidget {
 
 class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
   int _currentIndex = 0;
+  late final List<Widget> _pages;
 
-  List<Widget> get _pages => [
-    TechnicianDashboardTab(user: widget.userData),
-    TechnicianAppointmentsTab(),
-    ProfileScreen(userData: widget.userData),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      TechnicianDashboardTab(user: widget.userData),
+      const TechnicianAppointmentsTab(),
+      ProfileScreen(userData: widget.userData),
+    ];
+  }
 
-  void _onItemTapped(int index) => setState(() => _currentIndex = index);
+  void _onItemTapped(int index) {
+    if (index < 0 || index >= _pages.length) return;
+    setState(() => _currentIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: Container(
         height: 88,
@@ -41,7 +52,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
               height: 64,
               margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: theme.cardColor,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
@@ -55,7 +66,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _BottomNavItem(
-                    icon: Icons.dashboard,
+                    icon: Icons.dashboard_rounded,
                     label: 'Trang chủ',
                     index: 0,
                     currentIndex: _currentIndex,
@@ -63,7 +74,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                     onTap: _onItemTapped,
                   ),
                   _BottomNavItem(
-                    icon: Icons.build_circle,
+                    icon: Icons.list_alt_rounded,
                     label: 'Công việc',
                     index: 1,
                     currentIndex: _currentIndex,
@@ -71,7 +82,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                     onTap: _onItemTapped,
                   ),
                   _BottomNavItem(
-                    icon: Icons.person,
+                    icon: Icons.person_rounded,
                     label: 'Cá nhân',
                     index: 2,
                     currentIndex: _currentIndex,
@@ -88,6 +99,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
   }
 }
 
+// --- BottomNavItem ---
 class _BottomNavItem extends StatelessWidget {
   final IconData icon;
   final String label;

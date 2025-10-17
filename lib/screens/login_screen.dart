@@ -28,25 +28,35 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final authProvider = Provider.of<AuthProvider>(context);
 
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.grey.shade400 : Colors.grey.shade700;
+    final cardColor = theme.cardColor;
+    final inputFill = isDark ? Colors.grey.shade900 : Colors.grey[100];
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // --- Upper background với wave
+              // --- Upper background với gradient ---
               Stack(
                 children: [
                   Container(
                     height: 240,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.blueAccent, Colors.lightBlue],
+                        colors: isDark
+                            ? [Colors.blueGrey.shade800, Colors.black87]
+                            : [Colors.blueAccent, Colors.lightBlue],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.vertical(
+                      borderRadius: const BorderRadius.vertical(
                         bottom: Radius.circular(36),
                       ),
                     ),
@@ -89,18 +99,32 @@ class _LoginScreenState extends State<LoginScreen> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      // --- Email
+                      // --- Email ---
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                        style: TextStyle(color: textColor),
                         decoration: InputDecoration(
                           labelText: 'Email',
-                          prefixIcon: const Icon(Icons.email_outlined),
+                          labelStyle: TextStyle(color: subTextColor),
+                          prefixIcon: Icon(
+                            Icons.email_outlined,
+                            color: subTextColor,
+                          ),
                           filled: true,
-                          fillColor: Colors.grey[100],
-                          border: OutlineInputBorder(
+                          fillColor: inputFill,
+                          enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
+                            borderSide: BorderSide(
+                              color: subTextColor.withOpacity(0.3),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: theme.colorScheme.primary,
+                              width: 1.5,
+                            ),
                           ),
                         ),
                         validator: (value) {
@@ -115,18 +139,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // --- Password
+                      // --- Password ---
                       TextFormField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
+                        style: TextStyle(color: textColor),
                         decoration: InputDecoration(
                           labelText: 'Mật khẩu',
-                          prefixIcon: const Icon(Icons.lock_outlined),
+                          labelStyle: TextStyle(color: subTextColor),
+                          prefixIcon: Icon(
+                            Icons.lock_outlined,
+                            color: subTextColor,
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
                                   ? Icons.visibility_outlined
                                   : Icons.visibility_off_outlined,
+                              color: subTextColor,
                             ),
                             onPressed: () {
                               setState(() {
@@ -135,10 +165,19 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           ),
                           filled: true,
-                          fillColor: Colors.grey[100],
-                          border: OutlineInputBorder(
+                          fillColor: inputFill,
+                          enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
+                            borderSide: BorderSide(
+                              color: subTextColor.withOpacity(0.3),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: theme.colorScheme.primary,
+                              width: 1.5,
+                            ),
                           ),
                         ),
                         validator: (value) {
@@ -153,13 +192,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // --- Button
+                      // --- Nút đăng nhập ---
                       SizedBox(
                         width: double.infinity,
                         height: 50,
                         child: authProvider.isLoading
                             ? const Center(child: CircularProgressIndicator())
                             : ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.colorScheme.primary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: isDark ? 0 : 2,
+                                ),
                                 onPressed: () async {
                                   if (_formKey.currentState!.validate()) {
                                     final success = await authProvider.login(
@@ -179,9 +225,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                             content: Text(authProvider.error!),
                                             backgroundColor:
                                                 Colors.red.shade700,
-                                            duration: const Duration(
-                                              seconds: 4,
-                                            ),
                                           ),
                                         );
                                       }
@@ -199,7 +242,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                       if (mounted) {
                                         final user =
                                             authProvider.auth!.data.user;
-
                                         if (user.role == 2 ||
                                             user.role.toString() == '2') {
                                           Navigator.pushAndRemoveUntil(
@@ -226,11 +268,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                     }
                                   }
                                 },
-                                style: ElevatedButton.styleFrom(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
                                 child: const Text(
                                   'Đăng nhập',
                                   style: TextStyle(
@@ -241,15 +278,21 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                       ),
 
-                      // --- Optional inline error box
+                      // --- Hộp lỗi inline ---
                       if (authProvider.error != null) ...[
                         const SizedBox(height: 16),
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.red[50],
+                            color: isDark
+                                ? Colors.red.withOpacity(0.15)
+                                : Colors.red[50],
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.red[200]!),
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.red.shade700
+                                  : Colors.red[200]!,
+                            ),
                           ),
                           child: Row(
                             children: [
@@ -274,13 +317,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 24),
 
-                      // --- Register link
+                      // --- Link đăng ký ---
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             'Chưa có tài khoản? ',
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: TextStyle(color: subTextColor),
                           ),
                           TextButton(
                             onPressed: () {
