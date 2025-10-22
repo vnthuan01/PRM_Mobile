@@ -3,7 +3,12 @@ import 'package:intl/intl.dart';
 class DateFormatter {
   /// Format DateTime to Vietnamese date format (dd/MM/yyyy)
   static String formatDateVietnamese(DateTime date) {
-    return DateFormat('dd/MM/yyyy', 'vi_VN').format(date);
+    try {
+      return DateFormat('dd/MM/yyyy', 'vi_VN').format(date);
+    } catch (e) {
+      // Fallback to basic formatting if locale is not initialized
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    }
   }
 
   /// Format DateTime to Vietnamese date time format (dd/MM/yyyy HH:mm)
@@ -18,7 +23,12 @@ class DateFormatter {
 
   /// Format DateTime to Vietnamese time format (HH:mm)
   static String formatTimeVietnamese(DateTime date) {
-    return DateFormat('HH:mm', 'vi_VN').format(date);
+    try {
+      return DateFormat('HH:mm', 'vi_VN').format(date);
+    } catch (e) {
+      // Fallback to basic formatting if locale is not initialized
+      return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    }
   }
 
   /// Parse Vietnamese date string (dd/MM/yyyy) to DateTime
@@ -26,6 +36,18 @@ class DateFormatter {
     try {
       return DateFormat('dd/MM/yyyy', 'vi_VN').parseStrict(dateString);
     } catch (e) {
+      // Fallback to basic parsing if locale is not initialized
+      try {
+        final parts = dateString.split('/');
+        if (parts.length == 3) {
+          final day = int.parse(parts[0]);
+          final month = int.parse(parts[1]);
+          final year = int.parse(parts[2]);
+          return DateTime(year, month, day);
+        }
+      } catch (e) {
+        // If parsing fails, return null
+      }
       return null;
     }
   }

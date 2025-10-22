@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:prm_project/providers/booking_provider.dart';
+import 'package:prm_project/providers/vehicle_provider.dart';
 import 'package:prm_project/services/booking_service.dart';
+import 'package:prm_project/services/vehicle_service.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'services/auth_service.dart';
 import 'providers/auth_provider.dart';
 import 'theme_notifier.dart';
@@ -16,16 +19,22 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
 
+  // Initialize Vietnamese locale data for date formatting
+  await initializeDateFormatting('vi_VN', null);
+
   final repo = AuthService();
   final booking = BookingService();
+  final vehicle = VehicleService();
   final authProvider = AuthProvider(repo);
   final bookingProvider = BookingProvider(booking);
+  final vehicleProvider = VehicleProvider(vehicleService: vehicle);
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeNotifier()),
         ChangeNotifierProvider(create: (_) => authProvider),
         ChangeNotifierProvider(create: (_) => bookingProvider),
+        ChangeNotifierProvider(create: (_) => vehicleProvider),
       ],
       child: const MyApp(),
     ),

@@ -15,11 +15,9 @@ class MaintenanceStatusRequest {
 
   Map<String, dynamic> toJson() => _$MaintenanceStatusRequestToJson(this);
 
-  // Helper functions to convert enum to/from string
-  static MaintenanceStatus _statusFromJson(String status) => MaintenanceStatus
-      .values
-      .firstWhere((e) => e.toString().split('.').last == status);
+  // Helper functions to convert enum to/from integer
+  static MaintenanceStatus _statusFromJson(int status) =>
+      MaintenanceStatus.values.firstWhere((e) => e.index == status);
 
-  static String _statusToJson(MaintenanceStatus status) =>
-      status.toString().split('.').last;
+  static int _statusToJson(MaintenanceStatus status) => status.index;
 }

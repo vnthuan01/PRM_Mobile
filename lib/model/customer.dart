@@ -6,16 +6,16 @@ part 'customer.g.dart';
 class Customer {
   final String id;
   final String userId;
-  final String address;
-  final String status;
-  final String createdAt;
+  final String? address;
+  final String? status;
+  final String? createdAt;
 
   Customer({
     required this.id,
     required this.userId,
-    required this.address,
-    required this.status,
-    required this.createdAt,
+    this.address,
+    this.status,
+    this.createdAt,
   });
 
   factory Customer.fromJson(Map<String, dynamic> json) =>

@@ -8,20 +8,28 @@ import 'appointment_create_screen.dart';
 import 'appointment_detail_screen.dart';
 
 class AppointmentListScreen extends StatefulWidget {
-  final String? customerId;
-  const AppointmentListScreen({super.key, this.customerId});
+  const AppointmentListScreen({super.key});
 
   @override
   State<AppointmentListScreen> createState() => _AppointmentListScreenState();
 }
 
 class _AppointmentListScreenState extends State<AppointmentListScreen> {
+  bool _hasInitialized = false;
+  BookingStatus? _selectedStatus; // Filter status
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitialized) {
       _fetchBookings();
-    });
+      _hasInitialized = true;
+    }
   }
 
   void _fetchBookings() {
@@ -30,29 +38,41 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> {
       listen: false,
     );
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final customerIdToUse = widget.customerId ?? authProvider.customerId ?? '';
-    bookingProvider.fetchBookingsByCustomer(customerIdToUse);
+    final customerIdToUse = authProvider.customerId ?? '';
+
+    if (authProvider.isLoggedIn &&
+        authProvider.isCustomer &&
+        customerIdToUse.isNotEmpty) {
+      bookingProvider.fetchBookingsByCustomer(customerIdToUse);
+    }
+  }
+
+  void _refreshData() {
+    _hasInitialized = false;
+    _fetchBookings();
+    _hasInitialized = true;
   }
 
   void _navigateToCreate() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final customerIdToUse = widget.customerId ?? authProvider.customerId ?? '';
+    final customerIdToUse = authProvider.customerId ?? '';
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => AppointmentCreateScreen(customerId: customerIdToUse),
       ),
     );
-    if (result == true) _fetchBookings();
+    if (result == true) _refreshData();
   }
 
-  void _navigateToDetail(String bookingId) {
-    Navigator.push(
+  void _navigateToDetail(String bookingId) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => AppointmentDetailScreen(bookingId: bookingId),
       ),
     );
+    if (mounted) _refreshData();
   }
 
   String _serviceTypeName(int? type) {
@@ -98,6 +118,13 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final bookingProvider = Provider.of<BookingProvider>(context);
 
+    // Lọc bookings theo status đã chọn
+    final filteredBookings = (_selectedStatus == null)
+        ? bookingProvider.bookings
+        : bookingProvider.bookings
+              .where((b) => b.bookingStatus == _selectedStatus)
+              .toList();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryColor,
@@ -110,267 +137,255 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> {
       body: bookingProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : bookingProvider.bookings.isEmpty
-          ? const Center(child: Text('Không có lịch nào'))
-          : RefreshIndicator(
-              onRefresh: () async => _fetchBookings(),
-              child: ListView.builder(
-                itemCount: bookingProvider.bookings.length,
-                itemBuilder: (context, index) {
-                  final booking = bookingProvider.bookings[index];
-                  return Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    margin: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 16,
-                    ),
-                    elevation: 4,
-                    child: InkWell(
-                      onTap: () => _navigateToDetail(booking.id),
-                      borderRadius: BorderRadius.circular(16),
-                      child: IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Góc trái màu status
-                            Container(
-                              width: 8,
-                              decoration: BoxDecoration(
-                                color: _statusColor(
-                                  booking.bookingStatus,
-                                  isDarkMode,
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.calendar_today, size: 64, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Không có lịch nào',
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Hãy tạo lịch bảo dưỡng đầu tiên của bạn',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: _navigateToCreate,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Tạo lịch mới'),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                // Dropdown filter status
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: DropdownButton<BookingStatus>(
+                    isExpanded: true,
+                    value: _selectedStatus,
+                    hint: const Text('Tất cả trạng thái'),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('Tất cả'),
+                      ),
+                      ...BookingStatus.values.map(
+                        (status) => DropdownMenuItem(
+                          value: status,
+                          child: Text(status.vietnameseName),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedStatus = value;
+                      });
+                    },
+                  ),
+                ),
+
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () async => _refreshData(),
+                    child: filteredBookings.isEmpty
+                        ? const Center(child: Text('Không có booking phù hợp.'))
+                        : ListView.builder(
+                            itemCount: filteredBookings.length,
+                            itemBuilder: (context, index) {
+                              final booking = filteredBookings[index];
+                              return Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(16),
-                                  bottomLeft: Radius.circular(16),
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 16,
                                 ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Header: Vehicle + Service + menu
-                                    Row(
+                                elevation: 4,
+                                child: InkWell(
+                                  onTap: () =>
+                                      _navigateToDetail(booking.bookingId),
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: IntrinsicHeight(
+                                    child: Row(
                                       crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                          CrossAxisAlignment.stretch,
                                       children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                booking.vehicleId,
-                                                style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: isDarkMode
-                                                      ? Colors.white
-                                                      : Colors.black,
+                                        Container(
+                                          width: 8,
+                                          decoration: BoxDecoration(
+                                            color: _statusColor(
+                                              booking.bookingStatus,
+                                              isDarkMode,
+                                            ),
+                                            borderRadius:
+                                                const BorderRadius.only(
+                                                  topLeft: Radius.circular(16),
+                                                  bottomLeft: Radius.circular(
+                                                    16,
+                                                  ),
                                                 ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                _serviceTypeName(
-                                                  booking.serviceType,
-                                                ),
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: isDarkMode
-                                                      ? Colors.grey[300]
-                                                      : Colors.grey[800],
-                                                ),
-                                              ),
-                                            ],
                                           ),
                                         ),
-                                        // Icon menu nếu không canceled
-                                        PopupMenuButton<String>(
-                                          icon: Icon(
-                                            Icons.more_vert,
-                                            color: isDarkMode
-                                                ? Colors.white
-                                                : Colors.black,
-                                          ),
-                                          onSelected: (value) async {
-                                            if (value == 'delete' &&
-                                                booking
-                                                    .bookingStatus
-                                                    .canDelete) {
-                                              final confirmed =
-                                                  await _showDeleteConfirmation(
-                                                    context,
-                                                  );
-                                              if (confirmed == true) {
-                                                final success =
-                                                    await bookingProvider
-                                                        .deleteBooking(
-                                                          booking.id,
-                                                        );
-                                                if (success) {
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text(
-                                                        'Đã xóa lịch bảo dưỡng',
-                                                      ),
-                                                    ),
-                                                  );
-                                                } else {
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                        bookingProvider.error ??
-                                                            'Lỗi không xác định',
-                                                      ),
-                                                    ),
-                                                  );
-                                                }
-                                              }
-                                            }
-                                          },
-                                          itemBuilder: (context) => [
-                                            if (booking.bookingStatus.canDelete)
-                                              const PopupMenuItem(
-                                                value: 'delete',
-                                                child: Row(
+                                        Expanded(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
-                                                    Icon(
-                                                      Icons.delete,
-                                                      color: Colors.red,
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          const SizedBox(
+                                                            height: 4,
+                                                          ),
+                                                          Text(
+                                                            _serviceTypeName(
+                                                              booking
+                                                                  .serviceType,
+                                                            ),
+                                                            style: TextStyle(
+                                                              fontSize: 18,
+                                                              color: isDarkMode
+                                                                  ? Colors
+                                                                        .grey[300]
+                                                                  : Colors
+                                                                        .grey[800],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ),
-                                                    SizedBox(width: 8),
-                                                    Text('Xóa lịch'),
                                                   ],
                                                 ),
-                                              ),
-                                          ],
+                                                const SizedBox(height: 8),
+
+                                                // Status
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 4,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: _statusColor(
+                                                      booking.bookingStatus,
+                                                      isDarkMode,
+                                                    ).withOpacity(0.2),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                  ),
+                                                  child: Text(
+                                                    booking
+                                                        .bookingStatus
+                                                        .vietnameseName,
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color: _statusColor(
+                                                        booking.bookingStatus,
+                                                        isDarkMode,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+
+                                                // Ngày
+                                                Text(
+                                                  'Ngày: ${DateFormatter.formatDateVietnamese(DateTime.parse(booking.scheduledDate).toLocal())}',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: isDarkMode
+                                                        ? Colors.grey[300]
+                                                        : Colors.grey[800],
+                                                  ),
+                                                ),
+
+                                                if (booking.notes != null &&
+                                                    booking
+                                                        .notes!
+                                                        .isNotEmpty) ...[
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    'Ghi chú: ${booking.notes}',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color: isDarkMode
+                                                          ? Colors.grey[300]
+                                                          : Colors.grey[800],
+                                                    ),
+                                                  ),
+                                                ],
+                                                const SizedBox(height: 4),
+
+                                                if (booking.staffId != null &&
+                                                    booking.staffId!.isNotEmpty)
+                                                  Text(
+                                                    'Nhân viên: ${booking.staffId}',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color: isDarkMode
+                                                          ? Colors.grey[300]
+                                                          : Colors.grey[800],
+                                                    ),
+                                                  ),
+                                                if (booking.paymentStatus !=
+                                                    null)
+                                                  Text(
+                                                    'Thanh toán: ${booking.paymentStatus}',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color: isDarkMode
+                                                          ? Colors.grey[300]
+                                                          : Colors.grey[800],
+                                                    ),
+                                                  ),
+                                                const SizedBox(height: 8),
+
+                                                if (booking.bookingStatus ==
+                                                    BookingStatus.processing)
+                                                  LinearProgressIndicator(
+                                                    value: 0.5,
+                                                    backgroundColor: isDarkMode
+                                                        ? Colors.grey[700]
+                                                        : Colors.grey[300],
+                                                    color: isDarkMode
+                                                        ? Colors.lightBlueAccent
+                                                        : Colors.blue,
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
-
-                                    // Status
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: _statusColor(
-                                          booking.bookingStatus,
-                                          isDarkMode,
-                                        ).withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        booking.bookingStatus.vietnameseName,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                          color: _statusColor(
-                                            booking.bookingStatus,
-                                            isDarkMode,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-
-                                    // Ngày
-                                    Text(
-                                      'Ngày: ${DateFormatter.formatDateVietnamese(DateTime.parse(booking.scheduledDate).toLocal())}',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: isDarkMode
-                                            ? Colors.grey[300]
-                                            : Colors.grey[800],
-                                      ),
-                                    ),
-
-                                    if (booking.notes != null &&
-                                        booking.notes!.isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Ghi chú: ${booking.notes}',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: isDarkMode
-                                              ? Colors.grey[300]
-                                              : Colors.grey[800],
-                                        ),
-                                      ),
-                                    ],
-                                    const SizedBox(height: 4),
-
-                                    // Nhân viên
-                                    if (booking.staffId != null &&
-                                        booking.staffId!.isNotEmpty)
-                                      Text(
-                                        'Nhân viên: ${booking.staffId}',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: isDarkMode
-                                              ? Colors.grey[300]
-                                              : Colors.grey[800],
-                                        ),
-                                      ),
-                                    const SizedBox(height: 8),
-
-                                    // ProgressBar nếu processing
-                                    if (booking.bookingStatus ==
-                                        BookingStatus.processing)
-                                      LinearProgressIndicator(
-                                        value: 0.5,
-                                        backgroundColor: isDarkMode
-                                            ? Colors.grey[700]
-                                            : Colors.grey[300],
-                                        color: isDarkMode
-                                            ? Colors.lightBlueAccent
-                                            : Colors.blue,
-                                      ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+              ],
             ),
-    );
-  }
-
-  Future<bool?> _showDeleteConfirmation(BuildContext context) {
-    return showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Xác nhận xóa'),
-          content: const Text('Bạn có chắc chắn muốn xóa lịch bảo dưỡng này?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Hủy'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Xóa'),
-            ),
-          ],
-        );
-      },
     );
   }
 }

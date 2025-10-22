@@ -1,10 +1,10 @@
+// vehicle_request.dart
 import 'package:json_annotation/json_annotation.dart';
 
-part 'vehicle.g.dart';
+part 'vehicle_request.g.dart';
 
 @JsonSerializable()
-class Vehicle {
-  final String id;
+class VehicleRequest {
   final String customerId;
   final String model;
   final String vin;
@@ -13,8 +13,7 @@ class Vehicle {
   final int odometerKm;
   final String status;
 
-  Vehicle({
-    required this.id,
+  VehicleRequest({
     required this.customerId,
     required this.model,
     required this.vin,
@@ -24,10 +23,8 @@ class Vehicle {
     required this.status,
   });
 
-  /// Tạo object từ JSON
-  factory Vehicle.fromJson(Map<String, dynamic> json) =>
-      _$VehicleFromJson(json);
+  factory VehicleRequest.fromJson(Map<String, dynamic> json) =>
+      _$VehicleRequestFromJson(json);
 
-  /// Chuyển object sang JSON
-  Map<String, dynamic> toJson() => _$VehicleToJson(this);
+  Map<String, dynamic> toJson() => _$VehicleRequestToJson(this);
 }

@@ -44,24 +44,32 @@ extension BookingStatusExtension on BookingStatus {
 
 @JsonSerializable()
 class Booking {
-  final String id;
+  final String bookingId;
   final String customerId;
   final String vehicleId;
   final String? staffId;
   final int serviceType;
   final String scheduledDate;
-  final String status;
+  final dynamic status;
   final String? notes;
+  final double? totalCost;
+  final String? paymentStatus;
+  final String? createdAt;
+  final String? updatedAt;
 
   Booking({
-    required this.id,
+    required this.bookingId,
     required this.customerId,
     required this.vehicleId,
     this.staffId,
     required this.serviceType,
     required this.scheduledDate,
-    required this.status,
+    this.status,
     this.notes,
+    this.totalCost,
+    this.paymentStatus,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) =>
@@ -69,17 +77,46 @@ class Booking {
   Map<String, dynamic> toJson() => _$BookingToJson(this);
 
   BookingStatus get bookingStatus {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return BookingStatus.pending;
-      case 'processing':
-        return BookingStatus.processing;
-      case 'completed':
-        return BookingStatus.completed;
-      case 'cancelled':
-        return BookingStatus.cancelled;
-      default:
-        return BookingStatus.pending;
+    if (status is String) {
+      switch (status.toLowerCase()) {
+        case 'pending':
+          return BookingStatus.pending;
+        case 'processing':
+          return BookingStatus.processing;
+        case 'completed':
+          return BookingStatus.completed;
+        case 'cancelled':
+          return BookingStatus.cancelled;
+        default:
+          return BookingStatus.pending;
+      }
+    } else if (status is int) {
+      switch (status) {
+        case 0:
+          return BookingStatus.pending;
+        case 1:
+          return BookingStatus.processing;
+        case 2:
+          return BookingStatus.completed;
+        case 3:
+          return BookingStatus.cancelled;
+        default:
+          return BookingStatus.pending;
+      }
     }
+    return BookingStatus.pending;
   }
+}
+
+@JsonSerializable()
+class BookingResponse {
+  final bool success;
+  final String message;
+  final Booking? data;
+
+  BookingResponse({required this.success, required this.message, this.data});
+
+  factory BookingResponse.fromJson(Map<String, dynamic> json) =>
+      _$BookingResponseFromJson(json);
+  Map<String, dynamic> toJson() => _$BookingResponseToJson(this);
 }

@@ -5,7 +5,6 @@ part 'booking_request.g.dart';
 class BookingRequest {
   final String customerId;
   final String vehicleId;
-  final String? staffId;
   final int serviceType;
   final String scheduledDate;
   final String? notes;
@@ -13,7 +12,6 @@ class BookingRequest {
   BookingRequest({
     required this.customerId,
     required this.vehicleId,
-    this.staffId,
     required this.serviceType,
     required this.scheduledDate,
     this.notes,

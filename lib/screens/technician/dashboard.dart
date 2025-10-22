@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:prm_project/model/dto/response/auth_response.dart';
+import 'package:prm_project/screens/maintenance/maintenance_list_screen.dart';
+import 'package:prm_project/providers/maintence_provider.dart';
+import 'package:prm_project/services/maintenace_service.dart';
+import 'package:provider/provider.dart';
 
 class TechnicianDashboardTab extends StatelessWidget {
   final User user;
@@ -74,6 +78,10 @@ class TechnicianDashboardTab extends StatelessWidget {
                 ],
               ),
 
+              const SizedBox(height: 28),
+
+              // ===== QUICK ACTIONS =====
+              _buildQuickActionsCard(context, theme, primary),
               const SizedBox(height: 28),
 
               // ===== XE ĐANG BẢO DƯỠNG =====
@@ -332,6 +340,69 @@ class TechnicianDashboardTab extends StatelessWidget {
           child: Icon(icon, color: color),
         ),
         title: Text(message, style: const TextStyle(fontSize: 14)),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionsCard(
+    BuildContext context,
+    ThemeData theme,
+    Color primary,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Thao tác nhanh",
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChangeNotifierProvider(
+                          create: (_) =>
+                              MaintenanceProvider(MaintenanceService()),
+                          child: MaintenanceListScreen(),
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.build_rounded),
+                  label: const Text('Bảo dưỡng'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

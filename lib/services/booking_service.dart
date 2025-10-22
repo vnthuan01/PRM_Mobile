@@ -6,106 +6,79 @@ import 'package:prm_project/services/api_service.dart';
 class BookingService {
   final ApiService _api = ApiService();
 
-  /// Tạo mới một booking
-  Future<Booking?> createBooking(BookingRequest request) async {
+  Future<BookingResponse?> createBooking(BookingRequest request) async {
     try {
-      print(
-        '[BookingService] Sending POST /Bookings with: ${request.toJson()}',
-      );
-      final response = await _api.post('/Bookings', data: request.toJson());
+      print('[BookingService] Creating booking with data: ${request.toJson()}');
+      final response = await _api.post('/Booking', data: request.toJson());
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        print('[BookingService] Booking created: ${response.data}');
-        return Booking.fromJson(response.data);
-      } else {
-        print(
-          '[BookingService] Unexpected status code: ${response.statusCode}',
-        );
-        return null;
+      if (response.statusCode == 201 && response.data != null) {
+        print('[BookingService] Booking created successfully');
+        return BookingResponse.fromJson(response.data);
       }
+      print('[BookingService] Unexpected status code: ${response.statusCode}');
+      return null;
     } on DioException catch (e) {
-      print('[BookingService] createBooking error: ${e.message}');
+      print('[BookingService] createBooking error: $e');
       if (e.response != null) {
-        print('[BookingService] Error response: ${e.response!.data}');
+        return BookingResponse.fromJson(e.response!.data);
       }
-      rethrow;
+      return null;
     }
   }
 
-  /// Lấy danh sách booking của khách hàng
   Future<List<Booking>> getBookingsByCustomer(String customerId) async {
     try {
-      print(
-        '[BookingService] Fetching GET /Bookings/customer?customerId=$customerId',
-      );
+      print('[BookingService] Fetching bookings for customer: $customerId');
       final response = await _api.get(
-        '/Bookings/customer',
-        queryParameters: {'customerId': customerId},
+        '/Booking/customer/$customerId?pageNumber=1&pageSize=100',
       );
 
       if (response.statusCode == 200) {
-        final data = response.data as List;
-        final bookings = data.map((e) => Booking.fromJson(e)).toList();
-        print('[BookingService] Found ${bookings.length} bookings');
-        return bookings;
-      }
-      return [];
-    } on DioException catch (e) {
-      print('[BookingService] getBookingsByCustomer error: ${e.message}');
-      if (e.response != null) {
-        print('[BookingService] Error response: ${e.response!.data}');
-      }
-      rethrow;
-    }
-  }
-
-  /// Lấy tất cả bookings (hữu ích cho admin / list view)
-  /// Có thể truyền queryParams như: {'status': 'pending', 'page': 1, 'limit': 20}
-  Future<List<Booking>> getAllBookings({
-    Map<String, dynamic>? queryParams,
-  }) async {
-    try {
-      print(
-        '[BookingService] Fetching GET /Bookings (all) with params: $queryParams',
-      );
-      final response = await _api.get(
-        '/Bookings',
-        queryParameters: queryParams,
-      );
-
-      if (response.statusCode == 200) {
-        // response.data có thể là list hoặc object { data: [...], meta: {...} }
-        if (response.data is List) {
-          final data = response.data as List;
-          return data.map((e) => Booking.fromJson(e)).toList();
-        } else if (response.data is Map && response.data['data'] is List) {
-          final data = response.data['data'] as List;
-          return data.map((e) => Booking.fromJson(e)).toList();
+        print('[BookingService] Response data: ${response.data}');
+        if (response.data is Map<String, dynamic> &&
+            response.data['data'] is List) {
+          return (response.data['data'] as List)
+              .map((e) => Booking.fromJson(e as Map<String, dynamic>))
+              .toList();
+        } else if (response.data is List) {
+          return (response.data as List)
+              .map((e) => Booking.fromJson(e as Map<String, dynamic>))
+              .toList();
         } else {
-          print(
-            '[BookingService] Unexpected GET /Bookings response shape: ${response.data}',
+          print('[BookingService] Invalid response format: ${response.data}');
+          throw Exception(
+            'Invalid response format: expected { data: [...] } or [...]',
           );
-          return [];
         }
       }
+      print('[BookingService] Unexpected status code: ${response.statusCode}');
       return [];
-    } on DioException catch (e) {
-      print('[BookingService] getAllBookings error: ${e.message}');
-      if (e.response != null) {
-        print('[BookingService] Error response: ${e.response!.data}');
-      }
+    } catch (e) {
+      print('[BookingService] getBookingsByCustomer error: $e');
       rethrow;
     }
   }
 
-  /// Lấy chi tiết một booking theo ID
   Future<Booking?> getBookingById(String id) async {
     try {
-      print('[BookingService] GET /Bookings/$id');
-      final response = await _api.get('/Bookings/$id');
+      print('[BookingService] GET /Booking/$id');
+      final response = await _api.get('/Booking/$id');
+
+      print('[BookingService] Response status: ${response.statusCode}');
+      print('[BookingService] Response data: ${response.data}');
 
       if (response.statusCode == 200 && response.data != null) {
-        return Booking.fromJson(response.data);
+        // Handle the wrapped response structure
+        if (response.data is Map<String, dynamic> &&
+            response.data['data'] != null) {
+          final bookingData = response.data['data'] as Map<String, dynamic>;
+          print('[BookingService] Parsing booking data: $bookingData');
+          return Booking.fromJson(bookingData);
+        } else {
+          // Fallback for direct booking data
+          print('[BookingService] Parsing direct booking data');
+          return Booking.fromJson(response.data);
+        }
       }
       return null;
     } on DioException catch (e) {
@@ -119,8 +92,8 @@ class BookingService {
 
   Future<Booking?> deleteBookingById(String id) async {
     try {
-      print('[BookingService] DELETE /Bookings/$id');
-      final response = await _api.delete('/Bookings/$id');
+      print('[BookingService] DELETE /Booking/$id');
+      final response = await _api.delete('/Booking/$id');
 
       if (response.statusCode == 200 && response.data != null) {
         return Booking.fromJson(response.data);

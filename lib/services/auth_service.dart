@@ -41,6 +41,20 @@ class AuthService {
     }
   }
 
+  Future<User?> profile(String userId) async {
+    try {
+      print('[AuthService] Sending PROFILE request');
+      final response = await _api.get('/auth/id?userId=$userId');
+      return response.statusCode == 200 ? User.fromJson(response.data) : null;
+    } on DioException catch (e) {
+      print('[AuthService] Register error: ${e.message}');
+      if (e.response != null) {
+        print('[AuthService] Register error response: ${e.response!.data}');
+      }
+      rethrow;
+    }
+  }
+
   /// Logout user
   Future<void> logout([String? token]) async {
     final prefs = await SharedPreferences.getInstance();

@@ -11,7 +11,6 @@ class AppointmentDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bookingProvider = Provider.of<BookingProvider>(context);
     final primaryColor = Theme.of(context).colorScheme.primary;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
@@ -21,11 +20,15 @@ class AppointmentDetailScreen extends StatelessWidget {
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         actions: [
-          if (bookingProvider.bookings.isNotEmpty)
-            Builder(
-              builder: (context) {
+          Builder(
+            builder: (context) {
+              final bookingProvider = Provider.of<BookingProvider>(
+                context,
+                listen: false,
+              );
+              if (bookingProvider.bookings.isNotEmpty) {
                 final booking = bookingProvider.bookings.firstWhere(
-                  (b) => b.id == bookingId,
+                  (b) => b.bookingId == bookingId,
                   orElse: () => bookingProvider.bookings.first,
                 );
 
@@ -74,14 +77,30 @@ class AppointmentDetailScreen extends StatelessWidget {
                     ],
                   );
                 }
-                return const SizedBox.shrink();
-              },
-            ),
+              }
+              return const SizedBox.shrink();
+            },
+          ),
         ],
       ),
       body: FutureBuilder<Booking?>(
-        future: bookingProvider.getBookingById(bookingId),
+        future: Provider.of<BookingProvider>(
+          context,
+          listen: false,
+        ).getBookingById(bookingId),
         builder: (context, snapshot) {
+          print(
+            '[AppointmentDetailScreen] Connection state: ${snapshot.connectionState}',
+          );
+          print('[AppointmentDetailScreen] Has data: ${snapshot.hasData}');
+          print('[AppointmentDetailScreen] Has error: ${snapshot.hasError}');
+          if (snapshot.hasData) {
+            print('[AppointmentDetailScreen] Booking data: ${snapshot.data}');
+          }
+          if (snapshot.hasError) {
+            print('[AppointmentDetailScreen] Error: ${snapshot.error}');
+          }
+
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -200,7 +219,7 @@ class AppointmentDetailScreen extends StatelessWidget {
 
                         _buildDetailRow(
                           'ID lịch:',
-                          booking.id,
+                          booking.bookingId,
                           Icons.tag,
                           isDarkMode,
                         ),
@@ -240,6 +259,16 @@ class AppointmentDetailScreen extends StatelessWidget {
                             Icons.person,
                             isDarkMode,
                           ),
+
+                        if (booking.paymentStatus != null) ...[
+                          const SizedBox(height: 12),
+                          _buildDetailRow(
+                            'Trạng thái thanh toán:',
+                            booking.paymentStatus!,
+                            Icons.payment,
+                            isDarkMode,
+                          ),
+                        ],
 
                         if (booking.notes != null &&
                             booking.notes!.isNotEmpty) ...[

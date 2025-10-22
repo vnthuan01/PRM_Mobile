@@ -23,7 +23,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
     super.initState();
     _pages = [
       TechnicianDashboardTab(user: widget.userData),
-      const TechnicianAppointmentsTab(),
+      TechnicianAppointmentTab(user: widget.userData),
       ProfileScreen(userData: widget.userData),
     ];
   }

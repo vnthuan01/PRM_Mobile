@@ -11,22 +11,14 @@ class BookingProvider extends ChangeNotifier {
   String? error;
   List<Booking> bookings = [];
   Booking? createdBooking;
-
+  String? lastMessage;
   BookingProvider(this._repository);
 
-  // ==========================
-  // CREATE BOOKING
-  // ==========================
-  Future<bool> createBooking(BookingRequest request) async {
+  Future<BookingResponse?> createBooking(BookingRequest request) async {
     setIsLoading(true);
-    bool success = false;
     try {
       final response = await _repository.createBooking(request);
-      if (response != null) {
-        createdBooking = response;
-        success = true;
-      }
-      error = null;
+      return response;
     } on DioException catch (e) {
       error = _handleError(e);
     } catch (e) {
@@ -34,48 +26,34 @@ class BookingProvider extends ChangeNotifier {
     } finally {
       setIsLoading(false);
     }
-    return success;
+    return null;
   }
 
-  // ==========================
-  // GET BOOKINGS BY CUSTOMER
-  // ==========================
   Future<void> fetchBookingsByCustomer(String customerId) async {
+    // Prevent multiple simultaneous calls
+    if (isLoading) {
+      print('[BookingProvider] Already loading, skipping duplicate request');
+      return;
+    }
+
+    print('[BookingProvider] Fetching bookings for customer: $customerId');
     setIsLoading(true);
     try {
       final response = await _repository.getBookingsByCustomer(customerId);
       bookings = response;
+      print('[BookingProvider] Loaded ${bookings.length} bookings');
       error = null;
     } on DioException catch (e) {
+      print('[BookingProvider] DioException: ${e.message}');
       error = _handleError(e);
     } catch (e) {
+      print('[BookingProvider] General error: $e');
       error = e.toString();
     } finally {
       setIsLoading(false);
     }
   }
 
-  // ==========================
-  // GET ALL BOOKINGS (Admin / Technician)
-  // ==========================
-  Future<void> fetchAllBookings() async {
-    setIsLoading(true);
-    try {
-      final response = await _repository.getAllBookings();
-      bookings = response;
-      error = null;
-    } on DioException catch (e) {
-      error = _handleError(e);
-    } catch (e) {
-      error = e.toString();
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  // ==========================
-  // GET BOOKING BY ID
-  // ==========================
   Future<Booking?> getBookingById(String id) async {
     setIsLoading(true);
     Booking? result;
@@ -92,17 +70,13 @@ class BookingProvider extends ChangeNotifier {
     return result;
   }
 
-  // ==========================
-  // DELETE BOOKING
-  // ==========================
   Future<bool> deleteBooking(String id) async {
     setIsLoading(true);
     bool success = false;
     try {
       final result = await _repository.deleteBookingById(id);
       if (result != null) {
-        // Remove from local list
-        bookings.removeWhere((booking) => booking.id == id);
+        bookings.removeWhere((booking) => booking.bookingId == id);
         success = true;
       }
       error = null;
@@ -116,9 +90,6 @@ class BookingProvider extends ChangeNotifier {
     return success;
   }
 
-  // ==========================
-  // STATE HELPERS
-  // ==========================
   void setIsLoading(bool value) {
     isLoading = value;
     notifyListeners();
@@ -131,9 +102,6 @@ class BookingProvider extends ChangeNotifier {
     }
   }
 
-  // ==========================
-  // HANDLE DIO ERRORS
-  // ==========================
   String _handleError(DioException e) {
     if (e.response != null && e.response?.data != null) {
       if (e.response!.data is Map<String, dynamic> &&

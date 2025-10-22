@@ -1,191 +1,291 @@
 import 'package:flutter/material.dart';
-import 'appointment_detail_tab.dart';
+import 'package:prm_project/model/dto/response/auth_response.dart';
+import 'package:prm_project/screens/maintenance/maintenance_list_screen.dart';
+import 'package:prm_project/providers/maintence_provider.dart';
+import 'package:prm_project/services/maintenace_service.dart';
+import 'package:provider/provider.dart';
 
-class TechnicianAppointmentsTab extends StatefulWidget {
-  const TechnicianAppointmentsTab({super.key});
-
-  @override
-  State<TechnicianAppointmentsTab> createState() =>
-      _TechnicianAppointmentsTabState();
-}
-
-class _TechnicianAppointmentsTabState extends State<TechnicianAppointmentsTab> {
-  List<Map<String, dynamic>> appointments = [
-    {
-      "id": "APPT001",
-      "vehicle": "VinFast VF3",
-      "plate": "51H-88888",
-      "time": "2025-10-16 14:00",
-      "status": "In Progress",
-      "progress": 60,
-    },
-    {
-      "id": "APPT002",
-      "vehicle": "Yadea Xmen Neo",
-      "plate": "59D1-34567",
-      "time": "2025-10-16 16:30",
-      "status": "Pending",
-      "progress": 0,
-    },
-  ];
-
-  void _updateStatus(int index, String newStatus) {
-    setState(() {
-      appointments[index]["status"] = newStatus;
-      appointments[index]["progress"] = newStatus == "Completed"
-          ? 100
-          : (newStatus == "In Progress" ? 50 : 0);
-    });
-  }
-
-  Color _getStatusColor(String status, Color primary) {
-    switch (status) {
-      case "Completed":
-        return Colors.green;
-      case "In Progress":
-        return primary;
-      default:
-        return Colors.orangeAccent;
-    }
-  }
+class TechnicianAppointmentTab extends StatelessWidget {
+  final User user;
+  const TechnicianAppointmentTab({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
+    final primaryColor = theme.colorScheme.primary;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Danh sách lịch hẹn"),
-        centerTitle: true,
-        backgroundColor: theme.scaffoldBackgroundColor,
-        foregroundColor: primary,
-        elevation: 0.5,
-      ),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: appointments.length,
-          itemBuilder: (context, index) {
-            final appt = appointments[index];
-            final statusColor = _getStatusColor(appt["status"], primary);
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: primaryColor.withValues(alpha: 0.15),
+                    child: Icon(Icons.engineering_rounded, color: primaryColor),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Công việc của bạn",
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onBackground,
+                          ),
+                        ),
+                        Text(
+                          "Quản lý và theo dõi các công việc bảo dưỡng",
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onBackground.withOpacity(
+                              0.7,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-            return GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      TechnicianAppointmentDetail(appointment: appt),
+            // Quick Stats
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      icon: Icons.pending_actions_rounded,
+                      color: Colors.orange,
+                      label: "Chờ xử lý",
+                      value: "2",
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      icon: Icons.handyman_rounded,
+                      color: Colors.blue,
+                      label: "Đang xử lý",
+                      value: "3",
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      icon: Icons.verified_rounded,
+                      color: Colors.green,
+                      label: "Hoàn tất",
+                      value: "8",
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Maintenance List Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChangeNotifierProvider(
+                          create: (_) =>
+                              MaintenanceProvider(MaintenanceService()),
+                          child: MaintenanceListScreen(),
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.build_rounded),
+                  label: const Text('Danh sách bảo dưỡng'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
               ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Recent Activities
+            Expanded(
               child: Container(
-                margin: const EdgeInsets.only(bottom: 16),
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: theme.cardColor,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleAvatar(
-                        radius: 26,
-                        backgroundColor: primary.withOpacity(0.15),
-                        child: Icon(
-                          Icons.electric_bike,
-                          color: primary,
-                          size: 28,
-                        ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Hoạt động gần đây",
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              appt["vehicle"],
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            Text(
-                              "Biển số: ${appt["plate"]}",
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              "Thời gian: ${appt["time"]}",
-                              style: TextStyle(
-                                color: Colors.grey.shade700,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: LinearProgressIndicator(
-                                value: appt["progress"] / 100,
-                                minHeight: 6,
-                                color: statusColor,
-                                backgroundColor: Colors.grey.shade300,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  appt["status"],
-                                  style: TextStyle(
-                                    color: statusColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                PopupMenuButton<String>(
-                                  onSelected: (v) => _updateStatus(index, v),
-                                  itemBuilder: (_) => const [
-                                    PopupMenuItem(
-                                      value: "Pending",
-                                      child: Text("Pending"),
-                                    ),
-                                    PopupMenuItem(
-                                      value: "In Progress",
-                                      child: Text("In Progress"),
-                                    ),
-                                    PopupMenuItem(
-                                      value: "Completed",
-                                      child: Text("Completed"),
-                                    ),
-                                  ],
-                                  icon: const Icon(Icons.more_vert, size: 20),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: ListView(
+                        children: [
+                          _buildActivityItem(
+                            context,
+                            icon: Icons.check_circle,
+                            color: Colors.green,
+                            title: "Hoàn thành bảo dưỡng VF e34",
+                            subtitle: "2 giờ trước",
+                          ),
+                          _buildActivityItem(
+                            context,
+                            icon: Icons.schedule,
+                            color: Colors.orange,
+                            title: "Bắt đầu bảo dưỡng VF 8",
+                            subtitle: "4 giờ trước",
+                          ),
+                          _buildActivityItem(
+                            context,
+                            icon: Icons.assignment,
+                            color: Colors.blue,
+                            title: "Nhận công việc mới",
+                            subtitle: "1 ngày trước",
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            );
-          },
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+    BuildContext context, {
+    required Color color,
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+              fontSize: 12,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityItem(
+    BuildContext context, {
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+  }) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
