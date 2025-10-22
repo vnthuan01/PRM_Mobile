@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:prm_project/model/auth_response.dart';
+import 'package:prm_project/model/dto/response/auth_response.dart';
 import '../widgets/custom_button.dart';
 import 'setting_screen.dart';
 import '../services/auth_service.dart';

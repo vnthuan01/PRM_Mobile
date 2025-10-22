@@ -3,18 +3,22 @@ import 'package:dio/dio.dart';
 import 'package:prm_project/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
-import '../model/login_request.dart';
-import '../model/register_request.dart';
-import '../model/auth_response.dart';
+import '../services/user_service.dart';
+import '../model/dto/request/login_request.dart';
+import '../model/dto/request/register_request.dart';
+import '../model/dto/response/auth_response.dart';
+import '../model/customer.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _repository;
+  final CustomerService _customerService = CustomerService();
   final ApiService _api = ApiService();
 
   bool isLoading = false;
   String? error;
   AuthResponse? auth;
   String? _token; // thêm biến token riêng
+  Customer? _customer; // thêm biến customer
 
   AuthProvider(this._repository);
 
@@ -28,6 +32,10 @@ class AuthProvider extends ChangeNotifier {
       if (response != null && response.data.token.isNotEmpty) {
         auth = response;
         _token = response.data.token;
+
+        // Fetch customer data after successful login
+        await _fetchCustomerData(response.data.user.id);
+
         error = null;
         success = true;
       } else {
@@ -62,6 +70,10 @@ class AuthProvider extends ChangeNotifier {
       if (response != null && response.data.token.isNotEmpty) {
         auth = response;
         _token = response.data.token;
+
+        // Fetch customer data after successful registration
+        await _fetchCustomerData(response.data.user.id);
+
         error = null;
         success = true;
       } else {
@@ -99,6 +111,7 @@ class AuthProvider extends ChangeNotifier {
     } finally {
       auth = null;
       _token = null;
+      _customer = null;
       notifyListeners();
     }
   }
@@ -117,7 +130,6 @@ class AuthProvider extends ChangeNotifier {
 
         data: AuthData(
           message: 'Session restored successfully',
-
           token: savedToken,
           expiresAt: DateTime.now()
               .add(const Duration(days: 7))
@@ -125,6 +137,12 @@ class AuthProvider extends ChangeNotifier {
           user: User.empty(),
         ),
       );
+
+      // Try to fetch customer data if user is logged in
+      if (auth?.data.user.id.isNotEmpty == true) {
+        await _fetchCustomerData(auth!.data.user.id);
+      }
+
       notifyListeners();
     }
   }
@@ -142,9 +160,23 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  // ---- FETCH CUSTOMER DATA ----
+  Future<void> _fetchCustomerData(String userId) async {
+    try {
+      final customer = await _customerService.getCustomerByUserId(userId);
+      _customer = customer;
+    } catch (e) {
+      print('[AuthProvider] Failed to fetch customer data: $e');
+      // Don't set error here as it's not critical for login
+    }
+  }
+
+  // ---- GETTERS ----
   bool get isLoggedIn =>
       (_token != null && _token!.isNotEmpty) && (auth?.data.user != null);
 
   String? get token => _token;
   User? get currentUser => auth?.data.user;
+  Customer? get currentCustomer => _customer;
+  String? get customerId => _customer?.id;
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/booking_provider.dart';
-import '../../model/booking_request.dart';
+import '../../model/dto/request/booking_request.dart';
 import '../../widgets/selection_modal.dart';
 
 class AppointmentCreateScreen extends StatefulWidget {
@@ -17,24 +17,19 @@ class AppointmentCreateScreen extends StatefulWidget {
 class _AppointmentCreateScreenState extends State<AppointmentCreateScreen> {
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
-  DateTime? _selectedDate;
+  DateTime? _selectedDateTime;
 
   // MOCK DATA
-  final List<Map<String, String>> _allStaff = List.generate(
-    12,
-    (index) => {'id': 'staff$index', 'name': 'Nhân viên $index'},
-  );
+
   final List<Map<String, String>> _allVehicles = List.generate(
     12,
     (index) => {'id': 'vehicle$index', 'name': 'Xe Model $index'},
   );
   final List<Map<String, dynamic>> _serviceTypes = [
     {'id': 0, 'name': 'Bảo dưỡng cơ bản'},
-    {'id': 1, 'name': 'Bảo dưỡng nâng cao'},
-    {'id': 2, 'name': 'Sửa chữa'},
+    {'id': 1, 'name': 'Sửa chữa'},
   ];
 
-  String? _selectedStaffId;
   String? _selectedVehicleId;
   int? _selectedServiceTypeId;
 
@@ -44,9 +39,11 @@ class _AppointmentCreateScreenState extends State<AppointmentCreateScreen> {
     super.dispose();
   }
 
-  Future<void> _selectDate() async {
+  Future<void> _selectDateTime() async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
+
+    // Chọn ngày
+    final pickedDate = await showDatePicker(
       context: context,
       initialDate: now,
       firstDate: now,
@@ -68,16 +65,47 @@ class _AppointmentCreateScreenState extends State<AppointmentCreateScreen> {
         );
       },
     );
-    if (picked != null) {
-      setState(() => _selectedDate = picked);
+
+    if (pickedDate != null) {
+      // 2️⃣ Chọn giờ
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(now),
+        builder: (context, child) {
+          final primaryColor = Theme.of(context).colorScheme.primary;
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: ColorScheme.light(
+                primary: primaryColor,
+                onPrimary: Colors.white,
+                onSurface: Colors.black,
+              ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(foregroundColor: primaryColor),
+              ),
+            ),
+            child: child!,
+          );
+        },
+      );
+
+      if (pickedTime != null) {
+        final selectedDateTime = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
+        );
+        setState(() => _selectedDateTime = selectedDateTime);
+      }
     }
   }
 
   void _submit() async {
     if (_formKey.currentState!.validate() &&
-        _selectedDate != null &&
+        _selectedDateTime != null &&
         _selectedVehicleId != null &&
-        _selectedStaffId != null &&
         _selectedServiceTypeId != null) {
       final bookingProvider = Provider.of<BookingProvider>(
         context,
@@ -88,9 +116,8 @@ class _AppointmentCreateScreenState extends State<AppointmentCreateScreen> {
         customerId: widget.customerId,
         vehicleId: _selectedVehicleId!,
         serviceType: _selectedServiceTypeId!,
-        scheduledDate: _selectedDate!.toUtc().toIso8601String(),
+        scheduledDate: _selectedDateTime!.toUtc().toIso8601String(),
         notes: _notesController.text,
-        staffId: _selectedStaffId!,
       );
 
       final success = await bookingProvider.createBooking(request);
@@ -222,31 +249,13 @@ class _AppointmentCreateScreenState extends State<AppointmentCreateScreen> {
 
               // Chọn ngày
               selectionTile(
-                title: 'Chọn ngày',
-                selectedText: _selectedDate == null
+                title: 'Chọn ngày/Giờ',
+                selectedText: _selectedDateTime == null
                     ? null
-                    : "${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}",
-                onTap: _selectDate,
+                    : (_selectedDateTime?.toLocal().toString()),
+                onTap: _selectDateTime,
               ),
               const SizedBox(height: 16),
-
-              // Chọn nhân viên
-              selectionTile(
-                title: 'Chọn nhân viên',
-                selectedText: _selectedStaffId == null
-                    ? null
-                    : _allStaff.firstWhere(
-                        (e) => e['id'] == _selectedStaffId,
-                      )['name'],
-                onTap: () => showSelectionModal(
-                  context: context,
-                  title: 'Chọn nhân viên',
-                  items: _allStaff,
-                  selectedId: _selectedStaffId,
-                  onSelected: (id) => setState(() => _selectedStaffId = id),
-                ),
-              ),
-              const SizedBox(height: 32),
 
               // Submit button
               SizedBox(

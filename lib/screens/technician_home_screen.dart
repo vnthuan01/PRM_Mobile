@@ -1,6 +1,6 @@
 // technician_home_screen.dart
 import 'package:flutter/material.dart';
-import '../../model/auth_response.dart';
+import '../model/dto/response/auth_response.dart';
 import '../screens/profile_screen.dart';
 import '../screens/technician/dashboard.dart';
 import '../screens/technician/appointment_tab.dart';

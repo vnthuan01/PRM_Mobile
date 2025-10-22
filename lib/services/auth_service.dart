@@ -1,8 +1,8 @@
-import 'package:prm_project/model/login_request.dart';
-import 'package:prm_project/model/register_request.dart';
+import 'package:prm_project/model/dto/request/login_request.dart';
+import 'package:prm_project/model/dto/request/register_request.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
-import '../model/auth_response.dart';
+import '../model/dto/response/auth_response.dart';
 import 'package:dio/dio.dart';
 
 class AuthService {
@@ -12,7 +12,7 @@ class AuthService {
   Future<AuthResponse?> login(LoginRequest request) async {
     try {
       print('[AuthService] Sending LOGIN request with: ${request.toJson()}');
-      final response = await _api.post('/auth/login', request.toJson());
+      final response = await _api.post('/auth/login', data: request.toJson());
       return await _handleAuthResponse(response);
     } on DioException catch (e) {
       print('[AuthService] Login error: ${e.message}');
@@ -27,7 +27,10 @@ class AuthService {
   Future<AuthResponse?> register(RegisterRequest request) async {
     try {
       print('[AuthService] Sending REGISTER request with: ${request.toJson()}');
-      final response = await _api.post('/auth/register', request.toJson());
+      final response = await _api.post(
+        '/auth/register',
+        data: request.toJson(),
+      );
       return await _handleAuthResponse(response);
     } on DioException catch (e) {
       print('[AuthService] Register error: ${e.message}');

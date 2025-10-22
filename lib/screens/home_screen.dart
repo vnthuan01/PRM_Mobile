@@ -1,9 +1,11 @@
 // HomeScreen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:prm_project/screens/appointment/appointment_create_screen.dart';
 import 'package:prm_project/screens/appointment/appointment_list_screen.dart';
+import 'package:prm_project/providers/auth_provider.dart';
 import 'profile_screen.dart';
-import '../model/auth_response.dart';
+import '../model/dto/response/auth_response.dart';
 
 class HomeScreen extends StatefulWidget {
   final User userData;
@@ -23,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _pages = [
       _HomeTab(userData: widget.userData), // truyền userData vào HomeTab
-      const AppointmentListScreen(),
+      const AppointmentListScreen(), // Will get customerId from auth provider
       ProfileScreen(userData: widget.userData),
     ];
   }
@@ -320,11 +322,15 @@ class _HomeTab extends StatelessWidget {
                             title: item.title,
                             subtitle: item.subtitle,
                             onTap: () {
+                              final authProvider = Provider.of<AuthProvider>(
+                                context,
+                                listen: false,
+                              );
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => AppointmentCreateScreen(
-                                    customerId: userData.id,
+                                    customerId: authProvider.customerId ?? '',
                                   ),
                                 ),
                               );
@@ -371,10 +377,16 @@ class _HomeTab extends StatelessWidget {
                   return _ServiceCard(
                     service: s,
                     onTap: () {
+                      final authProvider = Provider.of<AuthProvider>(
+                        context,
+                        listen: false,
+                      );
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const AppointmentListScreen(),
+                          builder: (_) => AppointmentListScreen(
+                            customerId: authProvider.customerId ?? '',
+                          ),
                         ),
                       );
                     },
@@ -682,7 +694,6 @@ class _FeatureCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const _FeatureCard({
-    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,

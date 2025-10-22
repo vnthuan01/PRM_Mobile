@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:prm_project/model/booking_request.dart';
-import 'package:prm_project/model/booking_response.dart';
+import 'package:prm_project/model/dto/request/booking_request.dart';
+import 'package:prm_project/model/dto/response/booking_response.dart';
 import 'package:prm_project/services/api_service.dart';
 
 class BookingService {
@@ -12,7 +12,7 @@ class BookingService {
       print(
         '[BookingService] Sending POST /Bookings with: ${request.toJson()}',
       );
-      final response = await _api.post('/Bookings', request.toJson());
+      final response = await _api.post('/Bookings', data: request.toJson());
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('[BookingService] Booking created: ${response.data}');
@@ -117,23 +117,21 @@ class BookingService {
     }
   }
 
-  /// Gán kỹ thuật viên cho booking
-  Future<bool> assignStaff(String bookingId, String staffId) async {
+  Future<Booking?> deleteBookingById(String id) async {
     try {
-      print('[BookingService] PATCH /Bookings/$bookingId/assign/$staffId');
-      // Nếu ApiService.patch yêu cầu 2 tham số (path, data), truyền null nếu không có body
-      final response = await _api.patch(
-        '/Bookings/$bookingId/assign/$staffId',
-        null,
-      );
+      print('[BookingService] DELETE /Bookings/$id');
+      final response = await _api.delete('/Bookings/$id');
 
-      return response.statusCode == 200 || response.statusCode == 204;
+      if (response.statusCode == 200 && response.data != null) {
+        return Booking.fromJson(response.data);
+      }
+      return null;
     } on DioException catch (e) {
-      print('[BookingService] assignStaff error: ${e.message}');
+      print('[BookingService] deleteBookingById error: ${e.message}');
       if (e.response != null) {
         print('[BookingService] Error response: ${e.response!.data}');
       }
-      return false;
+      rethrow;
     }
   }
 }

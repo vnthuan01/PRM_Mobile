@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import '../model/booking_request.dart';
-import '../model/booking_response.dart';
+import '../model/dto/request/booking_request.dart';
+import '../model/dto/response/booking_response.dart';
 import '../services/booking_service.dart';
 
 class BookingProvider extends ChangeNotifier {
@@ -74,25 +74,6 @@ class BookingProvider extends ChangeNotifier {
   }
 
   // ==========================
-  // ASSIGN STAFF TO BOOKING
-  // ==========================
-  Future<bool> assignStaff(String bookingId, String staffId) async {
-    setIsLoading(true);
-    bool success = false;
-    try {
-      success = await _repository.assignStaff(bookingId, staffId);
-      error = null;
-    } on DioException catch (e) {
-      error = _handleError(e);
-    } catch (e) {
-      error = e.toString();
-    } finally {
-      setIsLoading(false);
-    }
-    return success;
-  }
-
-  // ==========================
   // GET BOOKING BY ID
   // ==========================
   Future<Booking?> getBookingById(String id) async {
@@ -109,6 +90,30 @@ class BookingProvider extends ChangeNotifier {
       setIsLoading(false);
     }
     return result;
+  }
+
+  // ==========================
+  // DELETE BOOKING
+  // ==========================
+  Future<bool> deleteBooking(String id) async {
+    setIsLoading(true);
+    bool success = false;
+    try {
+      final result = await _repository.deleteBookingById(id);
+      if (result != null) {
+        // Remove from local list
+        bookings.removeWhere((booking) => booking.id == id);
+        success = true;
+      }
+      error = null;
+    } on DioException catch (e) {
+      error = _handleError(e);
+    } catch (e) {
+      error = e.toString();
+    } finally {
+      setIsLoading(false);
+    }
+    return success;
   }
 
   // ==========================
