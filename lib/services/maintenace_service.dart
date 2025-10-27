@@ -148,6 +148,49 @@ class MaintenanceService {
     }
   }
 
+  Future<List<Maintenance>> getMaintenanceByStatus(int status) async {
+    try {
+      print('[MaintenanceService] GET /api/Maintenance/status/$status');
+      final response = await _api.get('/Maintenance/status/$status');
+
+      print('[MaintenanceService] Response status: ${response.statusCode}');
+      print('[MaintenanceService] Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        if (response.data is List) {
+          final data = response.data as List;
+          final maintenances = data
+              .map((e) => Maintenance.fromJson(e))
+              .toList();
+          print(
+            '[MaintenanceService] Found ${maintenances.length} maintenances with status $status',
+          );
+          return maintenances;
+        } else if (response.data is Map && response.data['data'] is List) {
+          final data = response.data['data'] as List;
+          final maintenances = data
+              .map((e) => Maintenance.fromJson(e))
+              .toList();
+          print(
+            '[MaintenanceService] Found ${maintenances.length} maintenances with status $status (wrapped)',
+          );
+          return maintenances;
+        } else {
+          print(
+            '[MaintenanceService] Unexpected response format: ${response.data}',
+          );
+          return [];
+        }
+      }
+      return [];
+    } on DioException catch (e) {
+      print('[MaintenanceService] getMaintenanceByStatus error: ${e.message}');
+      if (e.response != null)
+        print('[MaintenanceService] Error response: ${e.response!.data}');
+      rethrow;
+    }
+  }
+
   Future<bool> updateMaintenanceStatus({
     required String maintenanceId,
     required MaintenanceStatusRequest request,

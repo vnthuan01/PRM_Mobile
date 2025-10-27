@@ -46,7 +46,7 @@ class VehicleService {
       final response = await _api.get('/Vehicle/$id');
 
       if (response.statusCode == 200) {
-        final vehicle = VehicleResponse.fromJson(response.data);
+        final vehicle = VehicleResponse.fromJson(response.data['data']);
         print('[VehicleService] Found vehicle: $vehicle');
         return vehicle;
       }
@@ -66,9 +66,22 @@ class VehicleService {
       final response = await _api.post('/Vehicle', data: data);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final createdVehicle = VehicleResponse.fromJson(response.data);
-        print('[VehicleService] Created vehicle: $createdVehicle');
-        return createdVehicle;
+        print('[VehicleService] Response data: ${response.data}');
+
+        // Handle wrapped response with {success, message, data}
+        if (response.data is Map<String, dynamic> &&
+            response.data['data'] != null) {
+          final createdVehicle = VehicleResponse.fromJson(
+            response.data['data'],
+          );
+          print('[VehicleService] Created vehicle: $createdVehicle');
+          return createdVehicle;
+        } else {
+          // Handle direct response
+          final createdVehicle = VehicleResponse.fromJson(response.data);
+          print('[VehicleService] Created vehicle: $createdVehicle');
+          return createdVehicle;
+        }
       }
       return null;
     } on DioException catch (e) {

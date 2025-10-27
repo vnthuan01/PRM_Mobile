@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:prm_project/model/maintenance.dart';
 import 'package:prm_project/providers/booking_provider.dart';
+import 'package:prm_project/providers/maintence_provider.dart';
 import 'package:prm_project/providers/vehicle_provider.dart';
 import 'package:prm_project/services/booking_service.dart';
+import 'package:prm_project/services/maintenace_service.dart';
 import 'package:prm_project/services/vehicle_service.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -25,9 +28,11 @@ void main() async {
   final repo = AuthService();
   final booking = BookingService();
   final vehicle = VehicleService();
+  final maintenance = MaintenanceService();
   final authProvider = AuthProvider(repo);
   final bookingProvider = BookingProvider(booking);
   final vehicleProvider = VehicleProvider(vehicleService: vehicle);
+  final maintenanceProvider = MaintenanceProvider(maintenance);
   runApp(
     MultiProvider(
       providers: [
@@ -35,6 +40,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => authProvider),
         ChangeNotifierProvider(create: (_) => bookingProvider),
         ChangeNotifierProvider(create: (_) => vehicleProvider),
+        ChangeNotifierProvider(create: (_) => maintenanceProvider),
       ],
       child: const MyApp(),
     ),
@@ -77,8 +83,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ------------------- SPLASH SCREEN -------------------
-// ------------------- SPLASH / INTRO SCREEN -------------------
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -87,10 +91,14 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+    with TickerProviderStateMixin {
+  late AnimationController _fadeController;
   late Animation<double> _fadeLogo;
   late Animation<double> _fadeText;
+
+  late AnimationController _carController;
+  late Animation<Offset> _moveCar;
+  late Animation<double> _scaleCar;
 
   bool _showIntro = true;
 
@@ -98,29 +106,65 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    _controller = AnimationController(
+    // Fade animation cho logo & text
+    _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     );
-
     _fadeLogo = CurvedAnimation(
-      parent: _controller,
+      parent: _fadeController,
       curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
     );
-
     _fadeText = CurvedAnimation(
-      parent: _controller,
+      parent: _fadeController,
       curve: const Interval(0.3, 1.0, curve: Curves.easeIn),
     );
+    _fadeController.forward();
 
-    _controller.forward();
+    // Xe chạy animation
+    _carController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    );
+
+    // Giai đoạn 1: xe chạy từ ngoài màn hình vào giữa
+    _moveCar =
+        Tween<Offset>(
+          begin: const Offset(-1.5, 0),
+          end: const Offset(0.0, 0),
+        ).animate(
+          CurvedAnimation(
+            parent: _carController,
+            curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+          ),
+        );
+
+    // Giai đoạn 2: xe phóng to ra toàn màn hình rồi nhỏ lại
+    _scaleCar = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 0.6,
+          end: 2.5,
+        ).chain(CurveTween(curve: Curves.easeOutExpo)),
+        weight: 60,
+      ), // zoom to
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 2.5,
+          end: 0.9,
+        ).chain(CurveTween(curve: Curves.easeInOutBack)),
+        weight: 40,
+      ), // zoom back
+    ]).animate(_carController);
+
+    _carController.forward();
 
     _checkFirstRun();
   }
 
   Future<void> _checkFirstRun() async {
     await Future.delayed(const Duration(milliseconds: 2800));
-    // Chỉ hiển thị intro một lần (ở đây bạn có thể lưu SharedPreferences)
+    // Ở đây có thể kiểm tra SharedPreferences nếu muốn chỉ intro lần đầu
     setState(() => _showIntro = true);
   }
 
@@ -154,11 +198,11 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
-    _controller.dispose();
+    _fadeController.dispose();
+    _carController.dispose();
     super.dispose();
   }
 
-  // ------------------- BUILD -------------------
   @override
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
@@ -186,65 +230,61 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  // ------------------- INTRO UI -------------------
   Widget _buildIntro(Color primaryColor) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Stack(
       children: [
-        FadeTransition(
-          opacity: _fadeLogo,
-          child: Icon(Icons.electric_car, size: 110, color: Colors.white),
-        ),
-        const SizedBox(height: 28),
-        FadeTransition(
-          opacity: _fadeText,
-          child: const Text(
-            "EV Service Center",
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        FadeTransition(
-          opacity: _fadeText,
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 30),
-            child: Text(
-              "Ứng dụng quản lý & bảo dưỡng xe điện thông minh — hiện đại, tiện lợi và thân thiện với môi trường.",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 15,
-                height: 1.4,
+        // Text
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Xe ở dưới text
+            Positioned(
+              bottom: 40, // căn từ dưới
+              left: 0,
+              right: 0,
+              child: SlideTransition(
+                position: _moveCar,
+                child: ScaleTransition(
+                  scale: _scaleCar,
+                  child: Opacity(
+                    opacity: 0.9,
+                    child: Image.asset('assets/car_background.png', width: 220),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(height: 60),
-
-        // Nút bắt đầu
-        FadeTransition(
-          opacity: _fadeText,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 26),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
+            FadeTransition(
+              opacity: _fadeText,
+              child: const Text(
+                "EV Service Center",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-              elevation: 8,
             ),
-            onPressed: _navigateNext,
-            child: const Text(
-              "Bắt đầu ngay",
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+            const SizedBox(height: 12),
+            FadeTransition(
+              opacity: _fadeText,
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 30),
+                child: Text(
+                  "Ứng dụng quản lý & bảo dưỡng xe điện thông minh...",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70, fontSize: 15),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(height: 60),
+            FadeTransition(
+              opacity: _fadeText,
+              child: ElevatedButton(
+                onPressed: _navigateNext,
+                child: const Text("Bắt đầu ngay"),
+              ),
+            ),
+          ],
         ),
       ],
     );

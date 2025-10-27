@@ -28,7 +28,7 @@ class ServiceCard extends StatelessWidget {
             CircleAvatar(
               radius: 28,
               backgroundColor: primaryColor.withOpacity(0.1),
-              child: Icon(service.icon, color: primaryColor, size: 28),
+              child: Icon(service.icon ?? Icons.build_circle, color: primaryColor, size: 28),
             ),
             const SizedBox(height: 12),
             Text(

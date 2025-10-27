@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:prm_project/model/dto/response/vehicle_response.dart';
 import 'package:provider/provider.dart';
+import 'package:prm_project/providers/vehicle_provider.dart';
 import '../../model/dto/response/booking_response.dart';
 import '../../providers/booking_provider.dart';
 import '../../utils/date_formatter.dart';
@@ -26,6 +28,7 @@ class AppointmentDetailScreen extends StatelessWidget {
                 context,
                 listen: false,
               );
+
               if (bookingProvider.bookings.isNotEmpty) {
                 final booking = bookingProvider.bookings.firstWhere(
                   (b) => b.bookingId == bookingId,
@@ -83,29 +86,16 @@ class AppointmentDetailScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: FutureBuilder<Booking?>(
-        future: Provider.of<BookingProvider>(
-          context,
-          listen: false,
-        ).getBookingById(bookingId),
+      body: FutureBuilder<List<dynamic>>(
+        future: _loadBookingAndVehicle(context, bookingId),
         builder: (context, snapshot) {
-          print(
-            '[AppointmentDetailScreen] Connection state: ${snapshot.connectionState}',
-          );
-          print('[AppointmentDetailScreen] Has data: ${snapshot.hasData}');
-          print('[AppointmentDetailScreen] Has error: ${snapshot.hasError}');
-          if (snapshot.hasData) {
-            print('[AppointmentDetailScreen] Booking data: ${snapshot.data}');
-          }
-          if (snapshot.hasError) {
-            print('[AppointmentDetailScreen] Error: ${snapshot.error}');
-          }
-
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.hasError || !snapshot.hasData) {
+          if (snapshot.hasError ||
+              !snapshot.hasData ||
+              snapshot.data![0] == null) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -127,13 +117,14 @@ class AppointmentDetailScreen extends StatelessWidget {
             );
           }
 
-          final booking = snapshot.data!;
+          final booking = snapshot.data![0] as Booking;
+          final vehicle = snapshot.data![1] as VehicleResponse;
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Status Card
+                // === STATUS CARD ===
                 Card(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -196,26 +187,64 @@ class AppointmentDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // Booking Details
+                // === BOOKING DETAILS ===
                 Card(
+                  elevation: 8,
+                  shadowColor: Colors.blueAccent.withOpacity(0.3),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+                  color: isDarkMode
+                      ? Colors.grey[900]
+                      : const LinearGradient(
+                              colors: [Color(0xFFF8F9FF), Color(0xFFE8EBFF)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ).createShader(Rect.fromLTWH(0, 0, 200, 70)) ==
+                            null
+                      ? Colors.white
+                      : null,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        colors: isDarkMode
+                            ? [Colors.grey[850]!, Colors.black]
+                            : [Color(0xFFF8F9FF), Color(0xFFE8EBFF)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Thông tin lịch bảo dưỡng',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkMode ? Colors.white : Colors.black,
-                          ),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_month,
+                              color: Colors.blueAccent,
+                              size: 28,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Thông tin lịch bảo dưỡng',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : Colors.black87,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
+                        Divider(
+                          color: Colors.blueAccent.withOpacity(0.3),
+                          thickness: 1,
+                        ),
+                        const SizedBox(height: 10),
 
                         _buildDetailRow(
                           'ID lịch:',
@@ -223,24 +252,23 @@ class AppointmentDetailScreen extends StatelessWidget {
                           Icons.tag,
                           isDarkMode,
                         ),
-                        const SizedBox(height: 12),
-
+                        const SizedBox(height: 14),
                         _buildDetailRow(
                           'Xe:',
-                          booking.vehicleId,
+                          vehicle != null
+                              ? '${vehicle.model ?? "Không rõ"} (${vehicle.licensePlate ?? "?"})'
+                              : 'Đang tải thông tin xe...',
                           Icons.directions_car,
                           isDarkMode,
                         ),
-                        const SizedBox(height: 12),
-
+                        const SizedBox(height: 14),
                         _buildDetailRow(
                           'Loại dịch vụ:',
                           _getServiceTypeName(booking.serviceType),
                           Icons.build,
                           isDarkMode,
                         ),
-                        const SizedBox(height: 12),
-
+                        const SizedBox(height: 14),
                         _buildDetailRow(
                           'Ngày đặt lịch:',
                           DateFormatter.formatDateVietnameseWithDay(
@@ -249,35 +277,37 @@ class AppointmentDetailScreen extends StatelessWidget {
                           Icons.calendar_today,
                           isDarkMode,
                         ),
-                        const SizedBox(height: 12),
 
-                        if (booking.staffId != null &&
-                            booking.staffId!.isNotEmpty)
-                          _buildDetailRow(
-                            'Nhân viên:',
-                            booking.staffId!,
-                            Icons.person,
-                            isDarkMode,
-                          ),
-
-                        if (booking.paymentStatus != null) ...[
-                          const SizedBox(height: 12),
-                          _buildDetailRow(
-                            'Trạng thái thanh toán:',
-                            booking.paymentStatus!,
-                            Icons.payment,
-                            isDarkMode,
-                          ),
-                        ],
-
+                        // Ghi chú đẹp hơn
                         if (booking.notes != null &&
                             booking.notes!.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          _buildDetailRow(
-                            'Ghi chú:',
-                            booking.notes!,
-                            Icons.note,
-                            isDarkMode,
+                          const SizedBox(height: 14),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blueAccent.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.note_alt,
+                                  color: Colors.blueAccent,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    booking.notes!,
+                                    style: TextStyle(
+                                      color: isDarkMode
+                                          ? Colors.white70
+                                          : Colors.black87,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ],
@@ -290,6 +320,28 @@ class AppointmentDetailScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  /// Gọi song song 2 Future: Booking + Vehicle
+  Future<List<dynamic>> _loadBookingAndVehicle(
+    BuildContext context,
+    String bookingId,
+  ) async {
+    final bookingProvider = Provider.of<BookingProvider>(
+      context,
+      listen: false,
+    );
+    final vehicleProvider = Provider.of<VehicleProvider>(
+      context,
+      listen: false,
+    );
+
+    final booking = await bookingProvider.getBookingById(bookingId);
+    if (booking == null) return [null, null];
+
+    final vehicle = await vehicleProvider.getVehicleDetail(booking.vehicleId);
+
+    return [booking, vehicle];
   }
 
   Widget _buildDetailRow(

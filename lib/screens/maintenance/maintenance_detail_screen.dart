@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:prm_project/model/customer.dart';
 import 'package:prm_project/model/dto/request/maintenance_status_request.dart';
+import 'package:prm_project/model/dto/response/auth_response.dart';
+import 'package:prm_project/model/dto/response/vehicle_response.dart';
 import 'package:prm_project/model/maintenance.dart';
+import 'package:prm_project/model/staff.dart';
 import 'package:prm_project/providers/auth_provider.dart';
 import 'package:prm_project/services/maintenace_service.dart';
+import 'package:prm_project/services/user_service.dart';
+import 'package:prm_project/services/vehicle_service.dart';
 import 'package:provider/provider.dart';
 import '../../utils/date_formatter.dart';
 
@@ -25,15 +31,37 @@ class _MaintenanceDetailScreenState extends State<MaintenanceDetailScreen> {
     });
   }
 
-  Future<Maintenance?> _fetchMaintenanceDetail() async {
+  Future<Map<String, dynamic>?> _fetchMaintenanceDetail() async {
     try {
       final maintenanceService = MaintenanceService();
+      final userService = CustomerService();
+      final vehicleService = VehicleService();
+
       final maintenance = await maintenanceService.getMaintenanceById(
         widget.maintenanceId,
       );
-      return maintenance;
-    } catch (e) {
-      print('[MaintenanceDetailScreen] Error fetching maintenance: $e');
+      if (maintenance == null) return null;
+
+      final results = await Future.wait([
+        userService.getCustomerByCustomerId(maintenance.customerId),
+        userService.getStaffByStaffId(maintenance.staffId),
+        vehicleService.getVehicleDetail(maintenance.vehicleId),
+      ]);
+
+      final customer = results[0] as Customer;
+      final staff = results[1];
+      final vehicle = results[2];
+      print(customer.userId);
+
+      return {
+        'maintenance': maintenance,
+        'customer': customer,
+        'staff': staff,
+        'vehicle': vehicle,
+      };
+    } catch (e, stack) {
+      print('[MaintenanceDetailScreen] Error fetching maintenance detail: $e');
+      print(stack);
       return null;
     }
   }
@@ -109,7 +137,7 @@ class _MaintenanceDetailScreenState extends State<MaintenanceDetailScreen> {
           ),
         ],
       ),
-      body: FutureBuilder<Maintenance?>(
+      body: FutureBuilder<Map<String, dynamic>?>(
         future: _fetchMaintenanceDetail(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -117,35 +145,15 @@ class _MaintenanceDetailScreenState extends State<MaintenanceDetailScreen> {
           }
 
           if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Không thể tải chi tiết bảo dưỡng',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    snapshot.error?.toString() ?? 'Lỗi không xác định',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {}); // Trigger rebuild to retry
-                    },
-                    child: const Text('Thử lại'),
-                  ),
-                ],
-              ),
-            );
+            return Center(child: Text('Không thể tải chi tiết bảo dưỡng'));
           }
 
-          final maintenance = snapshot.data!;
+          final data = snapshot.data!;
+          final maintenance = data['maintenance'] as Maintenance;
+          final customer = data['customer'] as Customer?;
+          final staff = data['staff'] as Staff?;
+          final vehicle = data['vehicle'] as VehicleResponse;
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -274,10 +282,32 @@ class _MaintenanceDetailScreenState extends State<MaintenanceDetailScreen> {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Cập nhật trạng thái thành công!',
+                                        SnackBar(
+                                          backgroundColor:
+                                              Colors.green.shade600,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
                                           ),
+                                          content: Row(
+                                            children: const [
+                                              Icon(
+                                                Icons.check_circle_outline,
+                                                color: Colors.white,
+                                              ),
+                                              SizedBox(width: 12),
+                                              Text(
+                                                'Cập nhật trạng thái thành công!',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          duration: const Duration(seconds: 2),
                                         ),
                                       );
 
@@ -293,8 +323,31 @@ class _MaintenanceDetailScreenState extends State<MaintenanceDetailScreen> {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Cập nhật thất bại'),
+                                        SnackBar(
+                                          backgroundColor: Colors.red.shade600,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          content: Row(
+                                            children: const [
+                                              Icon(
+                                                Icons.error_outline,
+                                                color: Colors.white,
+                                              ),
+                                              SizedBox(width: 12),
+                                              Text(
+                                                'Cập nhật thất bại',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          duration: const Duration(seconds: 2),
                                         ),
                                       );
                                     }
@@ -315,91 +368,95 @@ class _MaintenanceDetailScreenState extends State<MaintenanceDetailScreen> {
                 // Maintenance Details
                 Card(
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  elevation: 4,
+                  color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                  elevation: 6,
+                  shadowColor: Colors.black26,
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 24,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Thông tin bảo dưỡng',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkMode ? Colors.white : Colors.black,
-                          ),
+                        // --- Header ---
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.build_circle_rounded,
+                              size: 26,
+                              color: Colors.blueAccent,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Thông tin bảo dưỡng',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: isDarkMode ? Colors.white : Colors.black,
+                              ),
+                            ),
+                          ],
                         ),
+
+                        const SizedBox(height: 20),
+                        const Divider(thickness: 1),
                         const SizedBox(height: 16),
 
-                        _buildDetailRow(
-                          'ID bảo dưỡng:',
-                          maintenance.maintenanceId,
-                          Icons.tag,
-                          isDarkMode,
+                        // --- Chi tiết thông tin ---
+                        _buildInfoTile(
+                          icon: Icons.directions_car_rounded,
+                          label: 'Xe',
+                          value: vehicle != null
+                              ? '${vehicle.model ?? "Không rõ"} (${vehicle.licensePlate ?? "Chưa có"})'
+                              : 'Đang tải thông tin xe...',
+                          isDarkMode: isDarkMode,
                         ),
-                        const SizedBox(height: 12),
-
-                        _buildDetailRow(
-                          'Xe:',
-                          maintenance.vehicleId,
-                          Icons.directions_car,
-                          isDarkMode,
+                        _buildInfoTile(
+                          icon: Icons.person_rounded,
+                          label: 'Khách hàng',
+                          value: customer != null
+                              ? '${customer.fullName ?? "Không rõ"} (${customer.email ?? "-"})'
+                              : 'Đang tải thông tin khách hàng...',
+                          isDarkMode: isDarkMode,
                         ),
-                        const SizedBox(height: 12),
-
-                        _buildDetailRow(
-                          'Khách hàng:',
-                          maintenance.customerId,
-                          Icons.person,
-                          isDarkMode,
+                        _buildInfoTile(
+                          icon: Icons.engineering_rounded,
+                          label: 'Nhân viên',
+                          value: staff != null
+                              ? '${staff.fullName ?? "Không rõ"} (${staff.email ?? "-"})'
+                              : 'Đang tải thông tin nhân viên...',
+                          isDarkMode: isDarkMode,
                         ),
-                        const SizedBox(height: 12),
-
-                        _buildDetailRow(
-                          'Nhân viên:',
-                          maintenance.staffId,
-                          Icons.engineering,
-                          isDarkMode,
+                        _buildInfoTile(
+                          icon: Icons.home_repair_service_rounded,
+                          label: 'Loại dịch vụ',
+                          value: maintenance.serviceTypeDisplayName,
+                          isDarkMode: isDarkMode,
                         ),
-                        const SizedBox(height: 12),
-
-                        _buildDetailRow(
-                          'Loại dịch vụ:',
-                          maintenance.serviceTypeDisplayName,
-                          Icons.build,
-                          isDarkMode,
-                        ),
-                        const SizedBox(height: 12),
-
-                        _buildDetailRow(
-                          'Ngày bảo dưỡng:',
-                          DateFormatter.formatDateVietnameseWithDay(
+                        _buildInfoTile(
+                          icon: Icons.calendar_today_rounded,
+                          label: 'Ngày bảo dưỡng',
+                          value: DateFormatter.formatDateVietnameseWithDay(
                             maintenance.serviceDate.toLocal(),
                           ),
-                          Icons.calendar_today,
-                          isDarkMode,
+                          isDarkMode: isDarkMode,
                         ),
-                        const SizedBox(height: 12),
-
-                        _buildDetailRow(
-                          'Số km:',
-                          '${maintenance.odometer} km',
-                          Icons.speed,
-                          isDarkMode,
+                        _buildInfoTile(
+                          icon: Icons.speed_rounded,
+                          label: 'Số km',
+                          value: '${maintenance.odometer} km',
+                          isDarkMode: isDarkMode,
                         ),
-                        const SizedBox(height: 12),
-
-                        if (maintenance.description.isNotEmpty) ...[
-                          _buildDetailRow(
-                            'Mô tả:',
-                            maintenance.description,
-                            Icons.description,
-                            isDarkMode,
+                        if (maintenance.description.isNotEmpty)
+                          _buildInfoTile(
+                            icon: Icons.description_rounded,
+                            label: 'Mô tả',
+                            value: maintenance.description,
+                            isDarkMode: isDarkMode,
                           ),
-                          const SizedBox(height: 12),
-                        ],
                       ],
                     ),
                   ),
@@ -412,45 +469,51 @@ class _MaintenanceDetailScreenState extends State<MaintenanceDetailScreen> {
     );
   }
 
-  Widget _buildDetailRow(
-    String label,
-    String value,
-    IconData icon,
-    bool isDarkMode,
-  ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: isDarkMode ? Colors.white : Colors.black,
-                ),
-              ),
-            ],
+  Widget _buildInfoTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required bool isDarkMode,
+  }) {
+    final textColor = isDarkMode ? Colors.white70 : Colors.black87;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 22,
+            color: isDarkMode ? Colors.blue[200] : Colors.blueAccent,
           ),
-        ),
-      ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: textColor.withOpacity(0.85),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

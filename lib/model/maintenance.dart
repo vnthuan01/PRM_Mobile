@@ -54,6 +54,8 @@ class Maintenance {
   final String? serviceTypeName;
   final String description;
   final int status;
+  String? vehicleModel;
+  String? vehicleLicensePlate;
   final String? statusName;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -70,6 +72,8 @@ class Maintenance {
     this.serviceTypeName,
     required this.description,
     required this.status,
+    this.vehicleLicensePlate,
+    this.vehicleModel,
     this.statusName,
     required this.createdAt,
     required this.updatedAt,
@@ -89,6 +93,10 @@ class Maintenance {
       default:
         return MaintenanceStatus.Pending;
     }
+  }
+
+  bool get isCompleted {
+    return status == 2;
   }
 
   // Getter để lấy service type name

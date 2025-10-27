@@ -63,7 +63,7 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen>
     }
 
     if (id != null && role != null) {
-      await provider.fetchMaintenances(userId: id, role: role);
+      await provider.fetchMaintenances(userId: id, role: role, newPagesize: 5);
     }
   }
 
@@ -150,10 +150,18 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen>
                   ),
                 ),
               ],
-              onChanged: (value) {
+              onChanged: (value) async {
                 setState(() {
                   _selectedStatus = value;
                 });
+                // Fetch data based on selected status
+                if (value != null) {
+                  final provider = context.read<MaintenanceProvider>();
+                  await provider.fetchMaintenancesByStatus(value.index);
+                } else {
+                  // Fetch all data
+                  _fetchInitial();
+                }
               },
             ),
           ),
@@ -228,7 +236,7 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen>
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              'Xe: ${item.vehicleId}',
+                                              'Xe: ${item.vehicleModel ?? "Không rõ"} (${item.vehicleLicensePlate ?? "Chưa có"})',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 16,

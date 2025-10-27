@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:prm_project/model/dto/response/auth_response.dart';
 import 'package:prm_project/screens/maintenance/maintenance_list_screen.dart';
 import 'package:prm_project/providers/maintence_provider.dart';
+import 'package:prm_project/screens/profile_screen.dart';
 import 'package:prm_project/services/maintenace_service.dart';
+import 'package:prm_project/widgets/payment_button.dart';
 import 'package:provider/provider.dart';
 
 class TechnicianDashboardTab extends StatelessWidget {
@@ -26,23 +28,39 @@ class TechnicianDashboardTab extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    "Xin chào, ${user.fullName.split(" ").last} 👋",
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onBackground,
-                    ),
+                  Row(
+                    children: [
+                      const Icon(Icons.waving_hand_rounded, size: 28),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Xin chào, ${user.fullName?.split(" ").last}",
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onBackground,
+                        ),
+                      ),
+                    ],
                   ),
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: primary.withValues(alpha: 0.15),
-                    child: Icon(Icons.engineering_rounded, color: primary),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProfileScreen(userData: user),
+                        ),
+                      );
+                    },
+                    child: CircleAvatar(
+                      radius: 24,
+                      backgroundColor: primary.withOpacity(0.15),
+                      child: Icon(Icons.person, color: primary),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
 
-              // ===== CA LÀM VIỆC =====
+              // ===== SHIFT CARD =====
               _buildShiftCard(theme, primary),
               const SizedBox(height: 24),
 
@@ -77,14 +95,43 @@ class TechnicianDashboardTab extends StatelessWidget {
                   ),
                 ],
               ),
-
               const SizedBox(height: 28),
 
               // ===== QUICK ACTIONS =====
               _buildQuickActionsCard(context, theme, primary),
+              const SizedBox(height: 20),
+
+              // ===== PAYMENT BUTTON CARD =====
+              Center(
+                child: Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Tạo thanh toán cho bảo dưỡng thành công',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        PaymentButton(autoPay: false),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 28),
 
-              // ===== XE ĐANG BẢO DƯỠNG =====
+              // ===== VEHICLES IN MAINTENANCE =====
               Text(
                 "Xe đang bảo dưỡng",
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -120,10 +167,9 @@ class TechnicianDashboardTab extends StatelessWidget {
                 imageUrl:
                     "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/dw2df39a3f/images/PDP/VF5/vf5-7.png",
               ),
-
               const SizedBox(height: 28),
 
-              // ===== THÔNG BÁO =====
+              // ===== NOTIFICATIONS =====
               Text(
                 "Thông báo gần đây",
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -149,7 +195,7 @@ class TechnicianDashboardTab extends StatelessWidget {
     );
   }
 
-  // ====== COMPONENTS ======
+  // ===== COMPONENTS =====
 
   Widget _buildShiftCard(ThemeData theme, Color primary) {
     return Container(
@@ -159,7 +205,7 @@ class TechnicianDashboardTab extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -169,7 +215,7 @@ class TechnicianDashboardTab extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 26,
-            backgroundColor: primary.withValues(alpha: 0.15),
+            backgroundColor: primary.withOpacity(0.15),
             child: Icon(Icons.schedule_rounded, color: primary, size: 28),
           ),
           const SizedBox(width: 14),
@@ -270,10 +316,7 @@ class TechnicianDashboardTab extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Ảnh nền
             Image.network(imageUrl, fit: BoxFit.cover),
-
-            // Gradient phủ tối để chữ nổi bật
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -283,8 +326,6 @@ class TechnicianDashboardTab extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Nội dung nổi
             Padding(
               padding: const EdgeInsets.all(16),
               child: Align(
@@ -336,7 +377,7 @@ class TechnicianDashboardTab extends StatelessWidget {
       elevation: 2,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.15),
+          backgroundColor: color.withOpacity(0.15),
           child: Icon(icon, color: color),
         ),
         title: Text(message, style: const TextStyle(fontSize: 14)),
@@ -356,7 +397,7 @@ class TechnicianDashboardTab extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -372,35 +413,31 @@ class TechnicianDashboardTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ChangeNotifierProvider(
-                          create: (_) =>
-                              MaintenanceProvider(MaintenanceService()),
-                          child: MaintenanceListScreen(),
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.build_rounded),
-                  label: const Text('Bảo dưỡng'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+          SizedBox(
+            width: double.infinity, // full width
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ChangeNotifierProvider(
+                      create: (_) => MaintenanceProvider(MaintenanceService()),
+                      child: MaintenanceListScreen(),
                     ),
                   ),
+                );
+              },
+              icon: const Icon(Icons.build_rounded),
+              label: const Text('Bảo dưỡng'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),

@@ -102,6 +102,8 @@ class _VehicleCreateScreenState extends State<VehicleCreateScreen> {
 
   void _submit() async {
     if (_formKey.currentState!.validate() && _selectedYear != null) {
+      // Hiển thị loading state (tùy chọn)
+
       final vehicleProvider = Provider.of<VehicleProvider>(
         context,
         listen: false,
@@ -118,18 +120,35 @@ class _VehicleCreateScreenState extends State<VehicleCreateScreen> {
       );
 
       try {
-        final vehicle = await vehicleProvider.createVehicle(request);
+        await vehicleProvider.createVehicle(request);
 
-        if (vehicle != null)
-          Navigator.pop(context, vehicle); // trả về xe mới tạo
-      } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tạo xe thất bại, vui lòng thử lại')),
+          SnackBar(
+            content: const Text('Tạo xe thành công.'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(milliseconds: 1500),
+          ),
         );
-      }
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        Navigator.of(context).pop();
+      } catch (e) {
+        // Xử lý lỗi
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Tạo xe thất bại, vui lòng thử lại.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } finally {}
     } else if (_selectedYear == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn năm sản xuất')),
+        const SnackBar(
+          content: Text('Vui lòng chọn năm sản xuất'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }

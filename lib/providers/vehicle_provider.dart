@@ -22,7 +22,7 @@ class VehicleProvider extends ChangeNotifier {
       throw Exception('Failed to create vehicle');
     } catch (e) {
       print('[VehicleProvider] createVehicle error: $e');
-      throw Exception(e);
+      rethrow;
     }
   }
 
@@ -44,7 +44,7 @@ class VehicleProvider extends ChangeNotifier {
       return vehicle;
     } catch (e) {
       print('[VehicleProvider] getVehicleDetail error: $e');
-      return null;
+      rethrow;
     }
   }
 

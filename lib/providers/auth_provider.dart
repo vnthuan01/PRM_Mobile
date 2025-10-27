@@ -168,7 +168,7 @@ class AuthProvider extends ChangeNotifier {
       if (userRole == 1) {
         // Customer - fetch customer data
         final customer = await _customerService.getCustomerByUserId(userId);
-        if (customer != null && customer.id.isNotEmpty) {
+        if (customer != null && customer.id!.isNotEmpty) {
           _customer = customer;
           _staff = null;
           print('[AuthProvider] Loaded customerId: ${customer.id}');

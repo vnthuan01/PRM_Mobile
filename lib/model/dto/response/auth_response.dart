@@ -5,20 +5,20 @@ part 'auth_response.g.dart';
 @JsonSerializable()
 class User {
   final String id;
-  final String email;
+  final String? email;
   @JsonKey(name: 'fullName')
-  final String fullName;
+  final String? fullName;
   @JsonKey(name: 'phoneNumber')
-  final String phoneNumber;
+  final String? phoneNumber;
   final String status;
   final int role;
   final String createdAt;
 
   User({
     required this.id,
-    required this.email,
-    required this.fullName,
-    required this.phoneNumber,
+    this.email,
+    this.fullName,
+    this.phoneNumber,
     required this.status,
     required this.role,
     required this.createdAt,

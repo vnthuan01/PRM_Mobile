@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:prm_project/services/maintenace_service.dart';
+import 'package:prm_project/services/vehicle_service.dart';
 import '../model/maintenance.dart';
 import '../model/dto/request/maintenance_status_request.dart';
 
@@ -35,7 +36,7 @@ class MaintenanceProvider extends ChangeNotifier {
   bool isFetchingMore = false;
   bool hasMore = true;
   int currentPage = 1;
-  final int pageSize = 5;
+  // final int newPagesize = 5;
 
   void setIsLoading(bool value) {
     isLoading = value;
@@ -54,6 +55,7 @@ class MaintenanceProvider extends ChangeNotifier {
   Future<void> fetchMaintenances({
     required String userId,
     required UserRole role,
+    required int newPagesize,
   }) async {
     if (isLoading) return;
 
@@ -68,18 +70,35 @@ class MaintenanceProvider extends ChangeNotifier {
         result = await _repository.getMaintenanceByStaffId(
           staffId: userId,
           pageNumber: currentPage,
-          pageSize: pageSize,
+          pageSize: newPagesize,
         );
       } else {
         result = await _repository.getMaintenanceByCustomerId(
           customerId: userId,
           pageNumber: currentPage,
-          pageSize: pageSize,
+          pageSize: newPagesize,
         );
       }
 
+      // --- Fetch thêm thông tin xe ---
+      final vehicleService = VehicleService();
+      result = await Future.wait(
+        result.map((m) async {
+          try {
+            final vehicle = await vehicleService.getVehicleDetail(m.vehicleId);
+            if (vehicle != null) {
+              m.vehicleModel = vehicle.model;
+              m.vehicleLicensePlate = vehicle.licensePlate;
+            }
+          } catch (e) {
+            print('[MaintenanceProvider] Không thể load xe ${m.vehicleId}: $e');
+          }
+          return m;
+        }),
+      );
+
       maintenances = result;
-      hasMore = result.length == pageSize;
+      hasMore = result.length == newPagesize;
       error = null;
     } catch (e) {
       error = _handleError(e);
@@ -107,22 +126,39 @@ class MaintenanceProvider extends ChangeNotifier {
         newItems = await _repository.getMaintenanceByStaffId(
           staffId: userId,
           pageNumber: nextPage,
-          pageSize: pageSize,
+          pageSize: 5,
         );
       } else {
         newItems = await _repository.getMaintenanceByCustomerId(
           customerId: userId,
           pageNumber: nextPage,
-          pageSize: pageSize,
+          pageSize: 5,
         );
       }
+
+      // --- Fetch thêm thông tin xe ---
+      final vehicleService = VehicleService();
+      newItems = await Future.wait(
+        newItems.map((m) async {
+          try {
+            final vehicle = await vehicleService.getVehicleDetail(m.vehicleId);
+            if (vehicle != null) {
+              m.vehicleModel = vehicle.model;
+              m.vehicleLicensePlate = vehicle.licensePlate;
+            }
+          } catch (e) {
+            print('[MaintenanceProvider] Không thể load xe ${m.vehicleId}: $e');
+          }
+          return m;
+        }),
+      );
 
       if (newItems.isEmpty) {
         hasMore = false;
       } else {
         maintenances.addAll(newItems);
         currentPage = nextPage;
-        hasMore = newItems.length == pageSize;
+        hasMore = newItems.length == 5;
       }
 
       error = null;
@@ -151,6 +187,44 @@ class MaintenanceProvider extends ChangeNotifier {
       setIsLoading(false);
     }
     return result;
+  }
+
+  Future<void> fetchMaintenancesByStatus(int status) async {
+    if (isLoading) return;
+
+    setIsLoading(true);
+
+    try {
+      // Lấy maintenances từ API
+      final result = await _repository.getMaintenanceByStatus(status);
+
+      final vehicleService = VehicleService();
+
+      // Lấy thông tin xe song song
+      final updatedMaintenances = await Future.wait(
+        result.map((m) async {
+          try {
+            final vehicle = await vehicleService.getVehicleDetail(m.vehicleId);
+            if (vehicle != null) {
+              // Cập nhật model & licensePlate nếu Maintenance có field này
+              m.vehicleModel = vehicle.model;
+              m.vehicleLicensePlate = vehicle.licensePlate;
+            }
+          } catch (e) {
+            print('[MaintenanceProvider] Không thể load xe ${m.vehicleId}: $e');
+          }
+          return m;
+        }),
+      );
+
+      maintenances = updatedMaintenances;
+      error = null;
+    } catch (e) {
+      error = _handleError(e);
+      maintenances = [];
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   Future<bool> updateMaintenanceStatus(

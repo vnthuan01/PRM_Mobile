@@ -34,7 +34,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final textColor = isDark ? Colors.white : Colors.black87;
     final subTextColor = isDark ? Colors.grey.shade400 : Colors.grey.shade700;
-    final cardColor = theme.cardColor;
     final inputFill = isDark ? Colors.grey.shade900 : Colors.grey[100];
 
     return Scaffold(
@@ -52,7 +51,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       gradient: LinearGradient(
                         colors: isDark
                             ? [Colors.blueGrey.shade800, Colors.black87]
-                            : [Colors.blueAccent, Colors.lightBlue],
+                            : [
+                                theme.colorScheme.primary,
+                                theme.colorScheme.primary,
+                              ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),

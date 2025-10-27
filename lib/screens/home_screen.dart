@@ -1,24 +1,25 @@
 // HomeScreen.dart
 import 'package:flutter/material.dart';
-import 'package:prm_project/providers/vehicle_provider.dart';
+import 'package:prm_project/screens/chatbot_screen.dart';
+import 'package:prm_project/widgets/floating_chatbot_button.dart';
+import 'package:provider/provider.dart';
+import 'package:prm_project/screens/appointment/appointment_list_screen.dart';
+import 'package:prm_project/screens/appointment/appointment_create_screen.dart';
+import 'package:prm_project/screens/maintenance/maintenance_list_screen.dart';
 import 'package:prm_project/screens/vehicle/vehicle_create.dart';
+import 'package:prm_project/screens/profile_screen.dart';
+import 'package:prm_project/providers/auth_provider.dart';
+import 'package:prm_project/providers/vehicle_provider.dart';
+import 'package:prm_project/providers/maintence_provider.dart';
+import 'package:prm_project/services/maintenace_service.dart';
+import 'package:prm_project/model/dto/response/auth_response.dart';
 import 'package:prm_project/widgets/booking_card.dart';
 import 'package:prm_project/widgets/feature_card.dart';
 import 'package:prm_project/widgets/service_card.dart';
 import 'package:prm_project/widgets/vehicle_card.dart';
-import 'package:provider/provider.dart';
-import 'package:prm_project/screens/appointment/appointment_create_screen.dart';
-import 'package:prm_project/screens/appointment/appointment_list_screen.dart';
-import 'package:prm_project/screens/maintenance/maintenance_list_screen.dart';
-import 'package:prm_project/providers/auth_provider.dart';
-import 'package:prm_project/providers/maintence_provider.dart';
-import 'package:prm_project/services/maintenace_service.dart';
-import 'profile_screen.dart';
-import '../model/dto/response/auth_response.dart';
 
 class HomeScreen extends StatefulWidget {
   final User userData;
-
   const HomeScreen({super.key, required this.userData});
 
   @override
@@ -28,6 +29,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   late final List<Widget> _pages;
+
   @override
   void initState() {
     super.initState();
@@ -57,15 +59,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: IndexedStack(index: _currentIndex, children: _pages),
+      body: Stack(
+        children: [
+          IndexedStack(index: _currentIndex, children: _pages),
 
-      // --- Floating Action Button ở giữa ---
+          // Chatbot floating button
+          FloatingChatButton(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ChatBotScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+
+      // Floating Action Button ở giữa để thêm xe
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Transform.translate(
         offset: const Offset(0, 25),
         child: FloatingActionButton(
           elevation: 4,
-          backgroundColor: Theme.of(context).colorScheme.primary,
+          backgroundColor: primaryColor,
           onPressed: () async {
             final authProvider = Provider.of<AuthProvider>(
               context,
@@ -92,7 +108,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
 
-      // --- Bottom Navigation ---
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
@@ -612,8 +627,8 @@ class _HomeTabState extends State<_HomeTab> {
                             final vehicle = vehicles[index];
                             return VehicleCard(
                               vehicle: Vehicle(
-                                name: vehicle.model,
-                                status: vehicle.status,
+                                name: vehicle.model ?? "Không rõ",
+                                status: vehicle.status ?? "Không xác định",
                               ),
                             );
                           },

@@ -1,28 +1,30 @@
-// vehicle_response.dart
 import 'package:json_annotation/json_annotation.dart';
-
 part 'vehicle_response.g.dart';
 
 @JsonSerializable()
 class VehicleResponse {
-  final String id;
-  final String customerId;
-  final String model;
-  final String vin;
-  final String licensePlate;
-  final int year;
-  final int odometerKm;
-  final String status;
+  final String? status;
+  final String? id;
+  final String? customerId;
+  final String? model;
+  final String? vin;
+  final String? licensePlate;
+  final int? year;
+  final int? odometerKm;
+  final String? createdAt;
+  final String? updatedAt;
 
   VehicleResponse({
-    required this.status,
-    required this.id,
-    required this.customerId,
-    required this.model,
-    required this.vin,
-    required this.licensePlate,
-    required this.year,
-    required this.odometerKm,
+    this.status,
+    this.id,
+    this.customerId,
+    this.model,
+    this.vin,
+    this.licensePlate,
+    this.year,
+    this.odometerKm,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory VehicleResponse.fromJson(Map<String, dynamic> json) =>
