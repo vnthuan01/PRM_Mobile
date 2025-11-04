@@ -9,7 +9,7 @@ class Staff {
   final String fullName;
   final String email;
   final String phoneNumber;
-  final String role;
+  final int role;
 
   Staff({
     required this.staffId,

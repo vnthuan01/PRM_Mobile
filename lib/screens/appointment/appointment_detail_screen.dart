@@ -51,6 +51,14 @@ class AppointmentDetailScreen extends StatelessWidget {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Đã xóa lịch bảo dưỡng'),
+                                backgroundColor: Colors.green,
+                                behavior: SnackBarBehavior.floating,
+                                margin: EdgeInsets.only(
+                                  bottom: 80,
+                                  left: 16,
+                                  right: 16,
+                                ),
+                                duration: Duration(seconds: 2),
                               ),
                             );
                             Navigator.pop(context);
@@ -60,6 +68,14 @@ class AppointmentDetailScreen extends StatelessWidget {
                                 content: Text(
                                   bookingProvider.error ?? 'Lỗi không xác định',
                                 ),
+                                backgroundColor: Colors.redAccent,
+                                behavior: SnackBarBehavior.floating,
+                                margin: const EdgeInsets.only(
+                                  bottom: 80,
+                                  left: 16,
+                                  right: 16,
+                                ),
+                                duration: const Duration(seconds: 3),
                               ),
                             );
                           }

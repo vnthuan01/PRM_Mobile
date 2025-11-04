@@ -256,7 +256,7 @@ class MaintenanceProvider extends ChangeNotifier {
             serviceType: old.serviceType,
             serviceTypeName: old.serviceTypeName,
             description: old.description,
-            status: request.status.index,
+            status: request.status.name,
             statusName: request.status.vietnameseName,
             createdAt: old.createdAt,
             updatedAt: DateTime.now(),

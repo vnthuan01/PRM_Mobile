@@ -51,18 +51,39 @@ class CustomerService {
       final response = await _api.get('/Customer/$customerId');
 
       if (response.statusCode == 200) {
-        final data = response.data['data'];
-        final customer = Customer.fromJson(data);
-        print('[CustomerService] Found ${customer.toJson()}');
-        return customer;
+        print('[CustomerService] Response: ${response.data}');
+
+        // Check structure before parsing
+        if (response.data is Map<String, dynamic>) {
+          final json = response.data;
+
+          // Some APIs wrap the data, some don't
+          final customerData = json.containsKey('data') ? json['data'] : json;
+
+          if (json['isSuccess'] == true && customerData != null) {
+            final customer = Customer.fromJson(customerData);
+            print('[CustomerService] Found ${customer.toJson()}');
+            return customer;
+          } else {
+            print(
+              '[CustomerService] Failed: ${json['message'] ?? "No message"}',
+            );
+            return null;
+          }
+        }
       }
+
+      print('[CustomerService] Non-200 response: ${response.statusCode}');
       return null;
     } on DioException catch (e) {
-      print('[CustomerService] getCustomerByUserId error: ${e.message}');
+      print('[CustomerService] getCustomerByCustomerId error: ${e.message}');
       if (e.response != null) {
         print('[CustomerService] Error response: ${e.response!.data}');
       }
-      // Return null instead of rethrowing for technicians who don't have customer records
+      // Return null instead of rethrowing (avoid crashing)
+      return null;
+    } catch (e) {
+      print('[CustomerService] Unexpected error: $e');
       return null;
     }
   }

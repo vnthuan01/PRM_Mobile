@@ -48,7 +48,7 @@ class Booking {
   final String customerId;
   final String vehicleId;
   final String? staffId;
-  final int serviceType;
+  final int serviceType; // giữ nguyên kiểu int
   final String scheduledDate;
   final dynamic status;
   final String? notes;
@@ -72,8 +72,45 @@ class Booking {
     this.updatedAt,
   });
 
-  factory Booking.fromJson(Map<String, dynamic> json) =>
-      _$BookingFromJson(json);
+  factory Booking.fromJson(Map<String, dynamic> json) {
+    int parsedServiceType;
+    final serviceTypeValue = json['serviceType'];
+
+    if (serviceTypeValue is int) {
+      parsedServiceType = serviceTypeValue;
+    } else if (serviceTypeValue is String) {
+      switch (serviceTypeValue.toLowerCase()) {
+        case 'maintenance':
+          parsedServiceType = 0;
+          break;
+        case 'repair':
+          parsedServiceType = 1;
+          break;
+        default:
+          parsedServiceType = -1;
+      }
+    } else {
+      parsedServiceType = -1;
+    }
+
+    return Booking(
+      bookingId: json['bookingId'] ?? '',
+      customerId: json['customerId'] ?? '',
+      vehicleId: json['vehicleId'] ?? '',
+      staffId: json['staffId'],
+      serviceType: parsedServiceType,
+      scheduledDate: json['scheduledDate'] ?? '',
+      status: json['status'],
+      notes: json['notes'],
+      totalCost: (json['totalCost'] is num)
+          ? (json['totalCost'] as num).toDouble()
+          : null,
+      paymentStatus: json['paymentStatus'],
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
+    );
+  }
+
   Map<String, dynamic> toJson() => _$BookingToJson(this);
 
   BookingStatus get bookingStatus {
@@ -105,6 +142,17 @@ class Booking {
       }
     }
     return BookingStatus.pending;
+  }
+
+  String get serviceTypeName {
+    switch (serviceType) {
+      case 0:
+        return 'Bảo dưỡng';
+      case 1:
+        return 'Sửa chữa';
+      default:
+        return 'Không xác định';
+    }
   }
 }
 

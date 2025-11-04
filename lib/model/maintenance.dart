@@ -3,13 +3,13 @@ import 'package:json_annotation/json_annotation.dart';
 part 'maintenance.g.dart';
 
 enum MaintenanceStatus {
-  @JsonValue(0)
+  @JsonValue('Pending')
   Pending,
-  @JsonValue(1)
+  @JsonValue('InProgress')
   InProgress,
-  @JsonValue(2)
+  @JsonValue('Completed')
   Completed,
-  @JsonValue(3)
+  @JsonValue('Cancelled')
   Cancelled,
 }
 
@@ -50,10 +50,16 @@ class Maintenance {
   final String staffId;
   final DateTime serviceDate;
   final int odometer;
-  final int serviceType;
+
+  /// ⚙️ C# backend trả `serviceType` là int (0–9)
+  final String serviceType;
+
   final String? serviceTypeName;
   final String description;
-  final int status;
+
+  /// 🔁 C# backend trả `status` là string ("Pending", ...)
+  final String status;
+
   String? vehicleModel;
   String? vehicleLicensePlate;
   final String? statusName;
@@ -79,27 +85,24 @@ class Maintenance {
     required this.updatedAt,
   });
 
-  // Getter để convert status int thành enum
   MaintenanceStatus get maintenanceStatus {
-    switch (status) {
-      case 0:
+    switch (status.toLowerCase()) {
+      case 'pending':
         return MaintenanceStatus.Pending;
-      case 1:
+      case 'inprogress':
         return MaintenanceStatus.InProgress;
-      case 2:
+      case 'completed':
         return MaintenanceStatus.Completed;
-      case 3:
+      case 'cancelled':
         return MaintenanceStatus.Cancelled;
       default:
         return MaintenanceStatus.Pending;
     }
   }
 
-  bool get isCompleted {
-    return status == 2;
-  }
+  bool get isCompleted => maintenanceStatus == MaintenanceStatus.Completed;
 
-  // Getter để lấy service type name
+  /// ✅ Map serviceType (int) sang tên tiếng Việt
   String get serviceTypeDisplayName {
     if (serviceTypeName != null && serviceTypeName!.isNotEmpty) {
       return serviceTypeName!;
@@ -107,17 +110,31 @@ class Maintenance {
 
     switch (serviceType) {
       case 0:
-        return 'Bảo dưỡng cơ bản';
+        return 'Bảo dưỡng định kỳ';
       case 1:
-        return 'Sửa chữa';
+        return 'Kiểm tra pin';
       case 2:
-        return 'Kiểm tra định kỳ';
+        return 'Bảo dưỡng phanh';
+      case 3:
+        return 'Thay lốp';
+      case 4:
+        return 'Sửa hệ thống treo';
+      case 5:
+        return 'Sửa hệ thống điện';
+      case 6:
+        return 'Sửa hệ thống sạc';
+      case 7:
+        return 'Sửa chữa chung';
+      case 8:
+        return 'Kiểm tra tổng quát';
+      case 9:
+        return 'Khẩn cấp';
       default:
         return 'Không xác định';
     }
   }
 
-  // Getter để lấy status name
+  /// ✅ Lấy tên trạng thái tiếng Việt
   String get statusDisplayName {
     if (statusName != null && statusName!.isNotEmpty) {
       return statusName!;

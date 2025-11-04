@@ -209,6 +209,7 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen>
                           ),
                           margin: const EdgeInsets.only(bottom: 16),
                           elevation: 4,
+                          clipBehavior: Clip.antiAlias, //
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16),
                             onTap: () async {
@@ -223,93 +224,120 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen>
                               );
                               if (mounted) _fetchInitial();
                             },
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                            child: IntrinsicHeight(
+                              // ✅ tự đo chiều cao theo nội dung
+                              child: Row(
                                 children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Xe: ${item.vehicleModel ?? "Không rõ"} (${item.vehicleLicensePlate ?? "Chưa có"})',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                                color: isDark
-                                                    ? Colors.white
-                                                    : Colors.black,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              item.serviceTypeDisplayName,
-                                              style: TextStyle(
-                                                color: isDark
-                                                    ? Colors.grey[300]
-                                                    : Colors.grey[600],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                  Container(
+                                    width: 8,
+                                    decoration: BoxDecoration(
+                                      color: _getStatusColor(
+                                        item.maintenanceStatus,
+                                        isDark,
                                       ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: _getStatusColor(
-                                            item.maintenanceStatus,
-                                            isDark,
-                                          ).withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          item.statusDisplayName,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: _getStatusColor(
-                                              item.maintenanceStatus,
-                                              isDark,
-                                            ),
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.calendar_today,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Ngày: ${DateFormatter.formatDateVietnamese(item.serviceDate.toLocal())}',
-                                      ),
-                                    ],
-                                  ),
-                                  if (item.description.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8.0),
-                                      child: Text(
-                                        item.description,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontStyle: FontStyle.italic,
-                                        ),
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(16),
+                                        bottomLeft: Radius.circular(16),
                                       ),
                                     ),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Xe: ${item.vehicleModel ?? "Không rõ"} (${item.vehicleLicensePlate ?? "Chưa có"})',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 16,
+                                                        color: isDark
+                                                            ? Colors.white
+                                                            : Colors.black,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      item.serviceTypeDisplayName,
+                                                      style: TextStyle(
+                                                        color: isDark
+                                                            ? Colors.grey[300]
+                                                            : Colors.grey[600],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 6,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: _getStatusColor(
+                                                    item.maintenanceStatus,
+                                                    isDark,
+                                                  ).withOpacity(0.15),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  item.statusDisplayName,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: _getStatusColor(
+                                                      item.maintenanceStatus,
+                                                      isDark,
+                                                    ),
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.calendar_today,
+                                                size: 16,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Ngày: ${DateFormatter.formatDateVietnamese(item.serviceDate.toLocal())}',
+                                              ),
+                                            ],
+                                          ),
+                                          if (item.description.isNotEmpty)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                top: 8.0,
+                                              ),
+                                              child: Text(
+                                                item.description,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontStyle: FontStyle.italic,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),

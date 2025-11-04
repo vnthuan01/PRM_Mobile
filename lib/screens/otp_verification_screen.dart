@@ -239,6 +239,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
+                        height: 1.2, // giúp text không bị lệch dọc
                       ),
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
@@ -255,6 +256,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         ),
                         filled: true,
                         fillColor: Theme.of(context).scaffoldBackgroundColor,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                        ), // căn giữa dọc
                       ),
                       onChanged: (value) => _handleOtpInput(index, value),
                       onTap: () {
@@ -262,6 +266,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             .selection = TextSelection.fromPosition(
                           TextPosition(offset: _controllers[index].text.length),
                         );
+                      },
+                      onSubmitted: (_) => _focusNodes[index].unfocus(),
+
+                      // ✅ Cho phép paste toàn bộ OTP
+                      onEditingComplete: () {
+                        // Nếu user paste toàn bộ mã vào ô đầu tiên
+                        if (index == 0) {
+                          final text = _controllers[index].text;
+                          if (text.length == 6) {
+                            for (int i = 0; i < 6; i++) {
+                              _controllers[i].text = text[i];
+                            }
+                            _verifyOtp();
+                          }
+                        }
                       },
                     ),
                   );

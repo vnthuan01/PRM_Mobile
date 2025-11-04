@@ -186,7 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           if (value == null || value.isEmpty) {
                             return 'Vui lòng nhập mật khẩu';
                           }
-                          if (value.length < 6) {
+                          if (value.length < 2) {
                             return 'Mật khẩu phải có ít nhất 6 ký tự';
                           }
                           return null;

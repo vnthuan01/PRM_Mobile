@@ -3,6 +3,7 @@ import 'package:prm_project/model/maintenance.dart';
 import 'package:prm_project/providers/maintence_provider.dart';
 import 'package:prm_project/providers/auth_provider.dart';
 import 'package:prm_project/services/payment_serivce.dart';
+import 'package:prm_project/utils/date_formatter.dart';
 import 'package:provider/provider.dart';
 // import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -142,9 +143,32 @@ class _PaymentButtonState extends State<PaymentButton> {
                         final isSelected = selected.contains(m);
                         return CheckboxListTile(
                           title: Text(
-                            'Mã: ${m.maintenanceId}\nXe: ${m.vehicleModel ?? ''}',
+                            'Mã: ${m.maintenanceId}\nXe: ${m.vehicleModel ?? ''} - Biển số: ${m.vehicleLicensePlate ?? ''}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.white
+                                  : Colors
+                                        .black87, // chữ nổi bật dựa theo theme
+                            ),
                           ),
-                          subtitle: Text('Ngày: ${m.serviceDate}'),
+                          subtitle: Text(
+                            'Ngày: ${DateFormatter.formatDateVietnamese(m.serviceDate.toLocal())}',
+                            style: TextStyle(
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.grey[300]
+                                  : Colors.grey[700],
+                            ),
+                          ),
+                          activeColor: Theme.of(
+                            context,
+                          ).colorScheme.primary, // màu checkbox khi checked
+                          checkColor: Colors.white, // màu dấu tick
                           value: isSelected,
                           onChanged: (val) {
                             setStateModal(() {
