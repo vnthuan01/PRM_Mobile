@@ -12,7 +12,7 @@ class AuthService {
   Future<AuthResponse?> login(LoginRequest request) async {
     try {
       print('[AuthService] Sending LOGIN request with: ${request.toJson()}');
-      final response = await _api.post('/auth/login', data: request.toJson());
+      final response = await _api.post('/Auth/login', data: request.toJson());
       return await _handleAuthResponse(response);
     } on DioException catch (e) {
       print('[AuthService] Login error: ${e.message}');
@@ -28,7 +28,7 @@ class AuthService {
     try {
       print('[AuthService] Sending REGISTER request with: ${request.toJson()}');
       final response = await _api.post(
-        '/auth/register',
+        '/Auth/register',
         data: request.toJson(),
       );
       return await _handleAuthResponse(response);
@@ -44,7 +44,7 @@ class AuthService {
   Future<User?> profile(String userId) async {
     try {
       print('[AuthService] Sending PROFILE request');
-      final response = await _api.get('/auth/id?userId=$userId');
+      final response = await _api.get('/Auth/id?userId=$userId');
       return response.statusCode == 200 ? User.fromJson(response.data) : null;
     } on DioException catch (e) {
       print('[AuthService] Register error: ${e.message}');

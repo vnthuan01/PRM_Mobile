@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../model/dto/request/register_request.dart';
+import '../model/dto/request/otp_request.dart';
 import '../providers/auth_provider.dart';
+import '../services/otp_service.dart';
+import 'otp_verification_screen.dart';
 import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -18,10 +21,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _otpService = OtpService();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
+  bool _isSendingOtp = false;
 
   @override
   void dispose() {
@@ -31,6 +36,82 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _sendOtpAndNavigate() async {
+    setState(() {
+      _isSendingOtp = true;
+    });
+
+    final request = SendOtpRequest(
+      email: _emailController.text.trim(),
+      purpose: 0, // Registration purpose
+    );
+
+    final response = await _otpService.sendOtp(request);
+
+    setState(() {
+      _isSendingOtp = false;
+    });
+
+    if (response?.success == true && mounted) {
+      // Navigate to OTP verification screen
+      final otpVerified = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OtpVerificationScreen(
+            email: _emailController.text.trim(),
+            registerData: RegisterData(
+              fullName: _nameController.text.trim(),
+              password: _passwordController.text,
+              confirmPassword: _confirmPasswordController.text,
+            ),
+          ),
+        ),
+      );
+
+      // If OTP is verified, proceed with registration
+      if (otpVerified == true && mounted) {
+        await _completeRegistration();
+      }
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            response?.message ?? 'Không thể gửi OTP. Vui lòng thử lại.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _completeRegistration() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    await authProvider.register(
+      RegisterRequest(
+        email: _emailController.text.trim(),
+        fullName: _nameController.text.trim(),
+        password: _passwordController.text,
+        confirmPassword: _confirmPasswordController.text,
+      ),
+    );
+
+    if (mounted) {
+      if (authProvider.auth != null &&
+          authProvider.auth!.data.token.isNotEmpty &&
+          authProvider.error == null) {
+        _showSuccessDialog(authProvider);
+      } else if (authProvider.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error!),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showSuccessDialog(AuthProvider authProvider) {
@@ -404,33 +485,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Register Button
                 SizedBox(
                   height: 54,
-                  child: authProvider.isLoading
+                  child: (_isSendingOtp || authProvider.isLoading)
                       ? const Center(child: CircularProgressIndicator())
                       : ElevatedButton(
                           onPressed: _agreeToTerms
                               ? () async {
                                   if (_formKey.currentState!.validate()) {
-                                    await authProvider.register(
-                                      RegisterRequest(
-                                        email: _emailController.text.trim(),
-                                        fullName: _nameController.text.trim(),
-                                        password: _passwordController.text,
-                                        confirmPassword:
-                                            _confirmPasswordController.text,
-                                      ),
-                                    );
-
-                                    if (authProvider.auth != null &&
-                                        authProvider
-                                            .auth!
-                                            .data
-                                            .token
-                                            .isNotEmpty &&
-                                        authProvider.error == null) {
-                                      if (mounted) {
-                                        _showSuccessDialog(authProvider);
-                                      }
-                                    }
+                                    await _sendOtpAndNavigate();
                                   }
                                 }
                               : null,
