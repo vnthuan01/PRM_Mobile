@@ -1,6 +1,7 @@
 // HomeScreen.dart
 import 'package:flutter/material.dart';
 import 'package:prm_project/screens/chatbot_screen.dart';
+import 'package:prm_project/services/auth_service.dart';
 import 'package:prm_project/widgets/floating_chatbot_button.dart';
 import 'package:provider/provider.dart';
 import 'package:prm_project/screens/appointment/appointment_list_screen.dart';
@@ -56,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
     final surfaceColor = theme.colorScheme.surface;
+    final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -68,7 +70,12 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ChatBotScreen()),
+                MaterialPageRoute(
+                  builder: (_) => ChatBotScreen(
+                    token: authProvider.token ?? '',
+                    currentUserId: authProvider.currentUser?.id ?? '',
+                  ),
+                ),
               );
             },
           ),
