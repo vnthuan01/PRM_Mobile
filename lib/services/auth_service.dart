@@ -8,7 +8,7 @@ import 'package:dio/dio.dart';
 class AuthService {
   final ApiService _api = ApiService();
 
-  /// Login user
+  ///Login user
   Future<AuthResponse?> login(LoginRequest request) async {
     try {
       print('[AuthService] Sending LOGIN request with: ${request.toJson()}');
@@ -23,7 +23,7 @@ class AuthService {
     }
   }
 
-  /// Register user
+  ///Register user
   Future<AuthResponse?> register(RegisterRequest request) async {
     try {
       print('[AuthService] Sending REGISTER request with: ${request.toJson()}');
@@ -55,14 +55,13 @@ class AuthService {
     }
   }
 
-  /// Logout user
+  ///Logout user
   Future<void> logout([String? token]) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
     _api.setAuthToken(null);
   }
 
-  /// Xử lý response chung cho login/register
   Future<AuthResponse?> _handleAuthResponse(Response response) async {
     if (response.statusCode == 200 && response.data != null) {
       final authResponse = AuthResponse.fromJson(response.data);
@@ -71,11 +70,11 @@ class AuthService {
       if (token.isNotEmpty) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', token);
-        _api.setAuthToken(token); // set header cho các request tiếp theo
+        _api.setAuthToken(token);
       }
 
       return authResponse;
     }
-    return null; // trả null nếu không có token hoặc statusCode != 200
+    return null;
   }
 }

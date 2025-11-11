@@ -14,7 +14,6 @@ class VehicleService {
       if (response.statusCode == 200) {
         final body = response.data;
 
-        // Xử lý trường hợp API trả về list hoặc object chứa list
         final list = body is List
             ? body
             : (body['data'] is List ? body['data'] : []);
@@ -68,7 +67,6 @@ class VehicleService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('[VehicleService] Response data: ${response.data}');
 
-        // Handle wrapped response with {success, message, data}
         if (response.data is Map<String, dynamic> &&
             response.data['data'] != null) {
           final createdVehicle = VehicleResponse.fromJson(
@@ -77,7 +75,6 @@ class VehicleService {
           print('[VehicleService] Created vehicle: $createdVehicle');
           return createdVehicle;
         } else {
-          // Handle direct response
           final createdVehicle = VehicleResponse.fromJson(response.data);
           print('[VehicleService] Created vehicle: $createdVehicle');
           return createdVehicle;

@@ -68,14 +68,14 @@ class BookingService {
       print('[BookingService] Response data: ${response.data}');
 
       if (response.statusCode == 200 && response.data != null) {
-        // Handle the wrapped response structure
+        //Handle the wrapped response structure
         if (response.data is Map<String, dynamic> &&
             response.data['data'] != null) {
           final bookingData = response.data['data'] as Map<String, dynamic>;
           print('[BookingService] Parsing booking data: $bookingData');
           return Booking.fromJson(bookingData);
         } else {
-          // Fallback for direct booking data
+          //Fallback for direct booking data
           print('[BookingService] Parsing direct booking data');
           return Booking.fromJson(response.data);
         }

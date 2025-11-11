@@ -12,10 +12,10 @@ class ApiChatService {
   final _api = ApiService();
   HubConnection? _hubConnection;
 
-  // Base URL cho ChatHub (ví dụ: https://192.168.1.10:7200)
+  //Base URL cho ChatHub (ví dụ: https://192.168.1.10:7200)
   String get _baseUrl => dotenv.env['CHAT_HUB_URL'] ?? '';
 
-  /// Bypass SSL khi chạy local (cho phép mobile kết nối tới localhost)
+  ///Bypass SSL khi chạy local (cho phép mobile kết nối tới localhost)
   IOClient createBypassClient() {
     final ioClient = HttpClient()
       ..badCertificateCallback =
@@ -23,9 +23,6 @@ class ApiChatService {
     return IOClient(ioClient);
   }
 
-  // ===========================
-  // REST API
-  // ===========================
   Future<List<ConversationResponse>> getMyConversations() async {
     try {
       final res = await _api.get('/Conversations/my');
@@ -72,9 +69,6 @@ class ApiChatService {
     }
   }
 
-  // ===========================
-  // SIGNALR (Realtime)
-  // ===========================
   Future<void> connectSignalR(String token) async {
     if (_hubConnection != null &&
         _hubConnection!.state == HubConnectionState.connected) {
@@ -103,19 +97,19 @@ class ApiChatService {
     _registerEvents();
 
     _hubConnection!.onclose((error) {
-      print('[SignalR] ❌ Disconnected: $error');
+      print('[SignalR] Disconnected: $error');
     });
 
     _hubConnection!.onreconnecting((error) {
-      print('[SignalR] ⚠️ Reconnecting... $error');
+      print('[SignalR] Reconnecting... $error');
     });
 
     _hubConnection!.onreconnected((connectionId) {
-      print('[SignalR] ✅ Reconnected with connectionId: $connectionId');
+      print('[SignalR] Reconnected with connectionId: $connectionId');
     });
 
     await _hubConnection!.start();
-    print('[SignalR] ✅ Connected successfully');
+    print('[SignalR] Connected successfully');
   }
 
   void _registerEvents() {
@@ -130,58 +124,55 @@ class ApiChatService {
     });
 
     _hubConnection!.on('UserTyping', (args) {
-      print('[SignalR] ✍️ UserTyping: $args');
+      print('[SignalR] UserTyping: $args');
       if (args != null && args.isNotEmpty) {
         _onUserTyping?.call(args[0]);
       }
     });
 
     _hubConnection!.on('TransferRequested', (args) {
-      print('[SignalR] 🔄 TransferRequested: $args');
+      print('[SignalR] TransferRequested: $args');
       if (args != null && args.isNotEmpty) {
         _onTransferRequested?.call(args[0]);
       }
     });
 
     _hubConnection!.on('StaffAssigned', (args) {
-      print('[SignalR] 👨‍💼 StaffAssigned: $args');
+      print('[SignalR] StaffAssigned: $args');
       if (args != null && args.isNotEmpty) {
         _onStaffAssigned?.call(args[0]);
       }
     });
 
     _hubConnection!.on('ConversationAssigned', (args) {
-      print('[SignalR] 📌 ConversationAssigned: $args');
+      print('[SignalR] ConversationAssigned: $args');
       if (args != null && args.isNotEmpty) {
         _onConversationAssigned?.call(args[0]);
       }
     });
 
     _hubConnection!.on('NewWaitingConversation', (args) {
-      print('[SignalR] 🕒 NewWaitingConversation: $args');
+      print('[SignalR] NewWaitingConversation: $args');
       if (args != null && args.isNotEmpty) {
         _onNewWaitingConversation?.call(args[0]);
       }
     });
 
     _hubConnection!.on('UserJoinedConversation', (args) {
-      print('[SignalR] 👋 UserJoinedConversation: $args');
+      print('[SignalR] UserJoinedConversation: $args');
       if (args != null && args.isNotEmpty) {
         _onUserJoinedConversation?.call(args[0]);
       }
     });
 
     _hubConnection!.on('UserLeftConversation', (args) {
-      print('[SignalR] 🚪 UserLeftConversation: $args');
+      print('[SignalR] UserLeftConversation: $args');
       if (args != null && args.isNotEmpty) {
         _onUserLeftConversation?.call(args[0]);
       }
     });
   }
 
-  // ===========================
-  // INVOKE METHODS
-  // ===========================
   Future<void> joinConversation(String conversationId) async {
     await _hubConnection?.invoke('JoinConversation', args: [conversationId]);
   }
@@ -249,13 +240,10 @@ class ApiChatService {
   Future<void> disconnectSignalR() async {
     if (_hubConnection != null) {
       await _hubConnection!.stop();
-      print('[SignalR] 🔌 Connection stopped');
+      print('[SignalR] Connection stopped');
     }
   }
 
-  // ===========================
-  // Event Callbacks
-  // ===========================
   Function(MessageResponse)? _onMessageReceived;
   Function(dynamic)? _onUserTyping;
   Function(dynamic)? _onTransferRequested;

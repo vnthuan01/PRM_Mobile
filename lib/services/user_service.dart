@@ -53,11 +53,11 @@ class CustomerService {
       if (response.statusCode == 200) {
         print('[CustomerService] Response: ${response.data}');
 
-        // Check structure before parsing
+        //Check structure before parsing
         if (response.data is Map<String, dynamic>) {
           final json = response.data;
 
-          // Some APIs wrap the data, some don't
+          //Some APIs wrap the data, some don't
           final customerData = json.containsKey('data') ? json['data'] : json;
 
           if (json['isSuccess'] == true && customerData != null) {
@@ -80,7 +80,7 @@ class CustomerService {
       if (e.response != null) {
         print('[CustomerService] Error response: ${e.response!.data}');
       }
-      // Return null instead of rethrowing (avoid crashing)
+      //Return null instead of rethrowing (avoid crashing)
       return null;
     } catch (e) {
       print('[CustomerService] Unexpected error: $e');
@@ -93,7 +93,6 @@ class CustomerService {
       print('[StaffService] Fetching GET /Staff/$staffId');
       final response = await _api.get('/Staff/$staffId');
       if (response.statusCode == 200) {
-        // Staff API returns data wrapped in 'data' field
         final staffData = response.data['data'];
         if (staffData != null) {
           final staff = Staff.fromJson(staffData);
@@ -116,7 +115,6 @@ class CustomerService {
       print('[StaffService] Fetching GET /Staff/userId?userId=$userId');
       final response = await _api.get('/Staff/userId?userId=$userId');
       if (response.statusCode == 200) {
-        // Staff API returns data wrapped in 'data' field
         final staffData = response.data['data'];
         if (staffData != null) {
           final staff = Staff.fromJson(staffData);
